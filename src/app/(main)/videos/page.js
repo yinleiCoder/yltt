@@ -35,11 +35,11 @@ export default function VideosPage() {
       ) : videos?.length === 0 ? (
         <div className="text-center py-20"><VideoIcon size={32} className="mx-auto text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">暂无视频</p></div>
       ) : (
-        <div ref={sectionRef} className="grid md:grid-cols-2 gap-4">
+        <div ref={sectionRef} className="columns-1 md:columns-2 gap-4 space-y-4 *:break-inside-avoid">
           {videos?.map((v) => (
             <Card
               key={v.id}
-              className="video-card surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0"
+              className="video-card surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0 inline-block w-full"
               onClick={() => v.url && setPreviewVideo(v)}
             >
               <div className="relative bg-accent">
