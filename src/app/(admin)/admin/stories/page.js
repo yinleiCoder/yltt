@@ -55,7 +55,7 @@ export default function AdminStoriesPage() {
     const file = e.target.files?.[0]; if (!file) return
     setUploading(true)
     const folder = form.media_type === 'video' ? 'stories/videos' : 'stories/images'
-    addUpload(file, '/api/upload', {
+    addUpload(file, '/api/upload/sign', {
       folder,
       onSuccess: (data) => {
         setForm((prev) => ({ ...prev, media_url: data.url }))

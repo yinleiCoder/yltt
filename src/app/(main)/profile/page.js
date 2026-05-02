@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0]; if (!file) return
     setLoading(true); setMessage('')
-    addUpload(file, '/api/upload', {
+    addUpload(file, '/api/upload/sign', {
       folder: 'avatars',
       onSuccess: async (data) => {
         await supabase.from('profiles').update({ avatar_url: data.url }).eq('id', user.id)

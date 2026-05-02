@@ -62,7 +62,7 @@ export default function AdminOsharePage() {
     pending.forEach((item) => {
       setQueue((prev) => prev.map((q) => q.id === item.id ? { ...q, status: 'uploading' } : q))
 
-      addUpload(item.file, '/api/oshare/upload', {
+      addUpload(item.file, '/api/oshare/upload/sign', {
         onSuccess: () => {
           setQueue((prev) => prev.map((q) => q.id === item.id ? { ...q, status: 'done' } : q))
           completed++

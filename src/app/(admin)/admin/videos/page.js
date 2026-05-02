@@ -41,7 +41,7 @@ export default function AdminVideosPage() {
   const handleVideoUpload = (e) => {
     const file = e.target.files?.[0]; if (!file) return
     setUploading(true)
-    addUpload(file, '/api/upload', {
+    addUpload(file, '/api/upload/sign', {
       folder: 'videos',
       onSuccess: (data) => {
         setForm((prev) => ({ ...prev, url: data.url, ossKey: data.key }))

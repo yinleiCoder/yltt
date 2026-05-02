@@ -53,7 +53,7 @@ export default function AdminPhotosPage() {
       }
     } catch { /* EXIF parsing failed, upload without metadata */ }
 
-    addUpload(file, '/api/upload', {
+    addUpload(file, '/api/upload/sign', {
       folder: 'photos',
       onSuccess: async (data) => {
         await addPhoto({ url: data.url, title: title || file.name, ...exif })

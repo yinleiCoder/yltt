@@ -110,7 +110,7 @@ export function TransferManager() {
   const filteredItems = tab === 'all' ? allItems : allItems.filter((i) => i._type === tab)
 
   return (
-    <Popover open={popoverOpen} onOpenChange={(open) => { setPopoverOpen(open); if (!open) userClosedRef.current = true }}>
+    <Popover open={popoverOpen} onOpenChange={(open) => { setPopoverOpen(open); if (!open) userClosedRef.current = true }} className="z-999">
       <PopoverTrigger render={
         <button className="relative w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center hover:bg-accent transition-colors">
           <Activity size={15} className={`${totalActive > 0 ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
