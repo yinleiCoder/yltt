@@ -1,19 +1,28 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import gsap from 'gsap'
-import { useGSAP } from '@gsap/react'
-
-gsap.registerPlugin(useGSAP)
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from '@/components/ui/pagination'
 import { Play, Video as VideoIcon, Download, Loader2 } from 'lucide-react'
 import { useDownloads } from '@/contexts/download-context'
 import { format } from 'date-fns'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 8
+
+function generatePageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = [1]
+  if (current > 3) pages.push('...')
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+    pages.push(i)
+  }
+  if (current < total - 2) pages.push('...')
+  pages.push(total)
+  return pages
+}
 
 export default function VideosPage() {
   const { supabase } = useAuth()
@@ -21,73 +30,48 @@ export default function VideosPage() {
   const [previewVideo, setPreviewVideo] = useState(null)
   const [videos, setVideos] = useState([])
   const [loaded, setLoaded] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const sectionRef = useRef(null)
-  const sentinelRef = useRef(null)
-  const pageRef = useRef(0)
-  const animatedRef = useRef(new Set())
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [pageLoading, setPageLoading] = useState(false)
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
-  const loadPage = useCallback(async (page) => {
-    const from = page * PAGE_SIZE
-    const to = from + PAGE_SIZE - 1
-    const { data } = await supabase
-      .from('videos')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to)
-    return data || []
-  }, [supabase])
-
-  // Initial load
+  // Get total count on mount
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const data = await loadPage(0)
-      if (cancelled) return
-      setVideos(data)
-      setHasMore(data.length === PAGE_SIZE)
-      setLoaded(true)
-      pageRef.current = 0
+      const { count } = await supabase
+        .from('videos')
+        .select('*', { count: 'exact', head: true })
+      if (!cancelled) setTotalCount(count || 0)
     })()
     return () => { cancelled = true }
-  }, [loadPage])
+  }, [supabase])
 
-  // Infinite scroll observer
+  // Load page data whenever page changes
   useEffect(() => {
-    if (!loaded) return
-    const el = sentinelRef.current
-    if (!el) return
+    let cancelled = false
+    ;(async () => {
+      setPageLoading(true)
+      const from = (page - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+      const { data } = await supabase
+        .from('videos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+      if (cancelled) return
+      setVideos(data || [])
+      setLoaded(true)
+      setPageLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [page, supabase])
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          const nextPage = pageRef.current + 1
-          setLoadingMore(true)
-          loadPage(nextPage).then((data) => {
-            setVideos((prev) => [...prev, ...data])
-            setHasMore(data.length === PAGE_SIZE)
-            pageRef.current = nextPage
-            setLoadingMore(false)
-          })
-        }
-      },
-      { rootMargin: '200px' }
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [loaded, hasMore, loadingMore, loadPage])
-
-  // Animate newly loaded cards
-  useGSAP(() => {
-    const newCards = gsap.utils.toArray('.video-card:not(.animated)')
-    if (newCards.length === 0) return
-    gsap.set(newCards, { y: 30, opacity: 0 })
-    gsap.to(newCards, { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power3.out', onComplete: () => {
-      newCards.forEach((el) => el.classList.add('animated'))
-    }})
-  }, { scope: sectionRef, dependencies: [videos] })
+  const handlePageChange = (newPage) => {
+    if (newPage === page || newPage < 1 || newPage > totalPages || pageLoading) return
+    setPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -102,11 +86,11 @@ export default function VideosPage() {
         <div className="text-center py-20"><VideoIcon size={32} className="mx-auto text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">暂无视频</p></div>
       ) : (
         <>
-          <div ref={sectionRef} className="columns-1 md:columns-2 gap-4 space-y-4 *:break-inside-avoid">
+          <div className={`columns-1 md:columns-2 gap-4 space-y-4 *:break-inside-avoid transition-opacity duration-200 ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {videos.map((v) => (
               <Card
                 key={v.id}
-                className="video-card surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0 inline-block w-full"
+                className="surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0 inline-block w-full"
                 onClick={() => v.url && setPreviewVideo(v)}
               >
                 <div className="relative bg-accent">
@@ -145,17 +129,43 @@ export default function VideosPage() {
             ))}
           </div>
 
-          {/* Sentinel for infinite scroll */}
-          <div ref={sentinelRef} className="h-4" />
-
-          {loadingMore && (
-            <div className="text-center py-6">
-              <Loader2 size={20} className="mx-auto text-primary animate-spin" />
+          {totalCount > 0 && (
+            <div className="flex justify-center mt-10 mb-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(page - 1); }}
+                      disabled={page <= 1 || pageLoading}
+                    />
+                  </PaginationItem>
+                  {generatePageNumbers(page, totalPages).map((p, i) => (
+                    <PaginationItem key={`${p}-${i}`}>
+                      {p === '...' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href="#"
+                          isActive={p === page}
+                          onClick={(e) => { e.preventDefault(); handlePageChange(p); }}
+                          disabled={pageLoading}
+                        >
+                          {p}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(page + 1); }}
+                      disabled={page >= totalPages || pageLoading}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
-          )}
-
-          {!hasMore && videos.length > PAGE_SIZE && (
-            <p className="text-center py-6 text-xs text-muted-foreground">已加载全部视频</p>
           )}
         </>
       )}
@@ -178,11 +188,9 @@ export default function VideosPage() {
                     <MediaSeekBackwardButton />
                     <MediaSeekForwardButton />
                     <MediaTimeRange />
-                    {/* <MediaTimeDisplay /> */}
                     <MediaDurationDisplay />
                     <MediaMuteButton />
                     <MediaVolumeRange />
-                    {/* <MediaCaptionsButton /> */}
                     <MediaPlaybackRateButton />
                     <MediaPipButton />
                     <MediaFullscreenButton />

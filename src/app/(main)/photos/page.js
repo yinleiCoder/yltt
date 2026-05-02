@@ -10,6 +10,33 @@ import { format } from 'date-fns'
 import { Camera, Calendar, Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useDownloads } from '@/contexts/download-context'
 
+const PHOTOS_STATE_KEY = 'yltt:photos:state'
+
+function savePhotosState(id, scrollTop) {
+  try {
+    sessionStorage.setItem(PHOTOS_STATE_KEY, JSON.stringify({
+      id,
+      scrollTop,
+      timestamp: Date.now(),
+    }))
+  } catch { /* quota exceeded */ }
+}
+
+function loadPhotosState() {
+  try {
+    const raw = sessionStorage.getItem(PHOTOS_STATE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (Date.now() - data.timestamp > 10 * 60 * 1000) {
+      sessionStorage.removeItem(PHOTOS_STATE_KEY)
+      return null
+    }
+    return data
+  } catch {
+    return null
+  }
+}
+
 export default function PhotosPage() {
   const { photos, isLoaded } = useData()
   const { addDownload } = useDownloads()
@@ -29,13 +56,27 @@ export default function PhotosPage() {
   useEffect(() => {
     if (photos?.length && !initRef.current) {
       initRef.current = true
-      setSelectedId(photos[0].id)
+      const saved = loadPhotosState()
+      if (saved && photos.some(p => p.id === saved.id)) {
+        setSelectedId(saved.id)
+        window.__photosSavedScrollTop = saved.scrollTop
+      } else {
+        setSelectedId(photos[0].id)
+      }
     }
   }, [photos])
 
-  // Initial scroll: align first thumbnail to indicator
+  // Initial scroll: restore saved position or align first thumbnail to indicator
   useEffect(() => {
     if (!isLoaded || !photos?.length || !thumbContainerRef.current || !selectedId) return
+
+    if (window.__photosSavedScrollTop !== undefined && window.__photosSavedScrollTop !== null) {
+      thumbContainerRef.current.scrollTop = window.__photosSavedScrollTop
+      animateThumbs()
+      delete window.__photosSavedScrollTop
+      return
+    }
+
     const el = thumbRefs.current[selectedId]
     const container = thumbContainerRef.current
     const indicator = indicatorRef.current
@@ -47,6 +88,15 @@ export default function PhotosPage() {
     const offset = elCenter - indicatorCenter
     container.scrollTop += offset
   }, [isLoaded])
+
+  // Save scroll state before unmount (nav away)
+  useEffect(() => {
+    return () => {
+      if (selectedId && thumbContainerRef.current) {
+        savePhotosState(selectedId, thumbContainerRef.current.scrollTop)
+      }
+    }
+  }, [selectedId])
 
   // Animate thumbnails based on distance from the indicator
   const animateThumbs = useCallback(() => {
@@ -97,6 +147,10 @@ export default function PhotosPage() {
 
     if (closestId && closestId !== selectedId && closestDist < threshold) {
       setSelectedId(closestId)
+    }
+
+    if (selectedId && thumbContainerRef.current) {
+      savePhotosState(selectedId, thumbContainerRef.current.scrollTop)
     }
   }, [selectedId, animateThumbs])
 
@@ -304,7 +358,7 @@ export default function PhotosPage() {
           style={{ scrollbarWidth: 'none' }}
         >
           {photos.map((p) => (
-            <div key={p.id} className="shrink-0 px-2 pb-3">
+            <div key={p.id} className="shrink-0 px-2 pb-3" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100px' }}>
               <button
                 ref={el => { thumbRefs.current[p.id] = el }}
                 onClick={() => selectPhoto(p.id)}
@@ -328,6 +382,7 @@ export default function PhotosPage() {
             key={p.id}
             onClick={() => setSelectedId(p.id)}
             className={`shrink-0 w-14 h-10 rounded-md overflow-hidden transition-all ${p.id === selectedId ? 'ring-2 ring-emerald-400 scale-105' : 'opacity-50'}`}
+            style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 56px 40px' }}
           >
             {p.url ? (
               <img src={getFileUrl(p.url)} alt="" className="w-full h-full object-cover" loading="lazy" />

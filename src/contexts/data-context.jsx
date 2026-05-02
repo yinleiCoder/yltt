@@ -91,7 +91,7 @@ export function DataProvider({ children }) {
 
   // ── Blessings ───────────────────────────────────────
   const loadBlessings = useCallback(async () => {
-    const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false }).limit(50)
+    const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
     setBlessings(data || [])
   }, [supabase])
 

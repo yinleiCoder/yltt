@@ -129,6 +129,31 @@
   50% { box-shadow: 0 0 0 8px rgba(62, 207, 142, 0); }
 }
 
-.animate-fade-in { animation: fade-in 0.4s ease-out; }
-.animate-fade-in-scale { animation: fade-in-scale 0.3s ease-out; }
-.animate-pulse-glow { animation: pulse-glow 2s infinite; }
+@keyframes bubble-wobble-a {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(5px); }
+  50% { transform: translateX(-3px); }
+  75% { transform: translateX(6px); }
+}
+@keyframes bubble-wobble-b {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-6px); }
+  55% { transform: translateX(4px); }
+  80% { transform: translateX(-5px); }
+}
+@keyframes bubble-wobble-c {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(3px); }
+  45% { transform: translateX(-7px); }
+  70% { transform: translateX(5px); }
+}
+
+.animate-bubble-wobble {
+  animation: bubble-wobble-a linear infinite;
+}
+.animate-bubble-wobble-b {
+  animation: bubble-wobble-b linear infinite;
+}
+.animate-bubble-wobble-c {
+  animation: bubble-wobble-c linear infinite;
+}
