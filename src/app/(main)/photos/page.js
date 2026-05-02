@@ -209,21 +209,6 @@ export default function PhotosPage() {
               {currentPhoto.title && (
                 <h2 className="text-sm lg:text-base font-semibold text-foreground leading-snug">{currentPhoto.title}</h2>
               )}
-              <button
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-primary transition-colors"
-                onClick={() => {
-                  const url = getFileUrl(currentPhoto.url)
-                  const ext = url.split('.').pop()?.split('?')[0] || 'jpg'
-                  const name = currentPhoto.title || 'photo'
-                  const filename = name.toLowerCase().endsWith('.' + ext.toLowerCase()) ? name : `${name}.${ext}`
-                  addDownload(url, filename)
-                }}
-              >
-                <Download size={12} />下载原图
-              </button>
-              {photos.length > 1 && (
-                <p className="text-xs text-muted-foreground/40 tabular-nums tracking-wider">{currentIdx + 1} / {photos.length}</p>
-              )}
               <div className="space-y-1.5 lg:space-y-2 text-xs text-muted-foreground">
                 {currentPhoto.taken_at && (
                   <p className="flex items-center gap-2">
@@ -247,6 +232,21 @@ export default function PhotosPage() {
                     <span key={i} className="px-2 py-0.5 rounded bg-accent text-[10px] text-foreground/60">{part}</span>
                   ))}
                 </div>
+              )}
+              <button
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer"
+                onClick={() => {
+                  const url = getFileUrl(currentPhoto.url)
+                  const ext = url.split('.').pop()?.split('?')[0] || 'jpg'
+                  const name = currentPhoto.title || 'photo'
+                  const filename = name.toLowerCase().endsWith('.' + ext.toLowerCase()) ? name : `${name}.${ext}`
+                  addDownload(url, filename)
+                }}
+              >
+                <Download size={12} />下载原图
+              </button>
+              {photos.length > 1 && (
+                <p className="text-xs text-muted-foreground/40 tabular-nums tracking-wider">{currentIdx + 1} / {photos.length}</p>
               )}
             </div>
           )}
@@ -311,7 +311,7 @@ export default function PhotosPage() {
                 className="w-full aspect-4/3 rounded-md overflow-hidden block"
               >
                 {p.url ? (
-                  <img src={getFileUrl(p.url)} alt="" className="w-full h-full object-cover opacity-55 transition-opacity duration-300" loading="lazy" />
+                  <img src={getFileUrl(p.url)} alt="" className="w-full h-full object-cover opacity-55 transition-opacity duration-300 cursor-pointer" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-accent flex items-center justify-center"><Camera size={12} className="text-muted-foreground/30" /></div>
                 )}
