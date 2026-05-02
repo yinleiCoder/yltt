@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { DataProvider } from '@/contexts/data-context'
 import { DownloadProvider } from '@/contexts/download-context'
 import { UploadProvider } from '@/contexts/upload-context'
+import { ToastProvider } from '@/components/ui/toast'
 
 export function Providers({ children, initialUser }) {
   return (
@@ -15,7 +16,9 @@ export function Providers({ children, initialUser }) {
           <DataProvider>
             <DownloadProvider>
               <UploadProvider>
-                {children}
+                <ToastProvider>
+                  {children}
+                </ToastProvider>
               </UploadProvider>
             </DownloadProvider>
           </DataProvider>

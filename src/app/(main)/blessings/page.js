@@ -16,9 +16,11 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Send, Loader2, Trash2, MapPin, Monitor } from 'lucide-react'
 import { format } from 'date-fns'
+import { useToast } from '@/components/ui/toast'
 
 export default function BlessingsPage() {
   const { user, profile } = useAuth()
+  const { toast } = useToast()
   const { blessings, isLoaded, addBlessing, deleteBlessing } = useData()
   const meta = useMetadata()
   const [content, setContent] = useState('')
@@ -42,12 +44,12 @@ export default function BlessingsPage() {
         device_info: meta?.device_info || '',
       })
       setContent(''); setAuthorName('')
-    } catch (e) { alert('发送失败: ' + e.message) }
+    } catch (e) { toast('发送失败: ' + e.message, 'error') }
     setSubmitting(false)
   }
 
   const handleDelete = async (id) => {
-    try { await deleteBlessing(id) } catch (e) { alert('删除失败: ' + e.message) }
+    try { await deleteBlessing(id) } catch (e) { toast('删除失败: ' + e.message, 'error') }
   }
 
   return (

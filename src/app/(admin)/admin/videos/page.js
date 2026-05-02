@@ -16,11 +16,13 @@ import { Edit, Plus, Trash2, Loader2, Upload, Video, X, Play, ExternalLink } fro
 import { format } from 'date-fns'
 import { getOssKey } from '@/lib/oss-client'
 import { useUploads } from '@/contexts/upload-context'
+import { useToast } from '@/components/ui/toast'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
 
 export default function AdminVideosPage() {
   const { videos, isLoaded, addVideo, updateVideo, deleteVideo } = useData()
   const { addUpload } = useUploads()
+  const { toast, confirm } = useToast()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editVideo, setEditVideo] = useState(null)
   const [form, setForm] = useState({ title: '', description: '', url: '', ossKey: '' })
@@ -60,7 +62,7 @@ export default function AdminVideosPage() {
         pendingOssKeyRef.current = data.key
       },
       onError: (msg) => {
-        alert('上传失败: ' + msg)
+        toast('上传失败: ' + msg, 'error')
         setUploading(false)
       },
     })
@@ -85,7 +87,7 @@ export default function AdminVideosPage() {
       setSaving(false)
       await deleteOssFile(pendingOssKeyRef.current)
       pendingOssKeyRef.current = null
-      alert('保存失败: ' + e.message)
+      toast('保存失败: ' + e.message, 'error')
     }
   }
 
@@ -96,13 +98,13 @@ export default function AdminVideosPage() {
   }, [])
 
   const handleDelete = async (id) => {
-    if (!confirm('确认删除？')) return
+    if (!await confirm('确认删除？', '删除视频')) return
     const video = videos?.find(v => v.id === id)
     if (video) {
       const key = video.oss_key || getOssKey(video.url)
       if (key) await fetch('/api/oss/delete', { method: 'POST', body: JSON.stringify({ key }), headers: { 'Content-Type': 'application/json' } })
     }
-    try { await deleteVideo(id) } catch (e) { alert('删除失败: ' + e.message) }
+    try { await deleteVideo(id) } catch (e) { toast('删除失败: ' + e.message, 'error') }
   }
 
   return (
@@ -196,7 +198,7 @@ export default function AdminVideosPage() {
                     ) : (
                       <div className="text-center"><Upload size={20} className="mx-auto text-muted-foreground mb-1.5" /><span className="text-xs text-muted-foreground">上传视频文件</span></div>
                     )}
-                    <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleVideoUpload} disabled={uploading} />
+                    <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoUpload} disabled={uploading} />
                   </label>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>

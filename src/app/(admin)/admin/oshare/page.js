@@ -9,6 +9,7 @@ import { useUploads } from '@/contexts/upload-context'
 import { useDownloads } from '@/contexts/download-context'
 import { formatSize } from '@/lib/utils'
 import { Upload, Trash2, Loader2, FolderOpen, File, Download, X, Check, AlertCircle, Play } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 let queueId = 0
 
@@ -20,6 +21,7 @@ export default function AdminOsharePage() {
   const [running, setRunning] = useState(false)
   const fileInputRef = useRef(null)
   const { addUpload } = useUploads()
+  const { toast, confirm } = useToast()
   const { addDownload } = useDownloads()
 
   const loadFiles = useCallback(async () => {
@@ -84,7 +86,7 @@ export default function AdminOsharePage() {
   }
 
   const handleDelete = async (key) => {
-    if (!confirm('确认删除此文件？')) return
+    if (!await confirm('确认删除此文件？', '删除文件')) return
     try {
       const res = await fetch('/api/oshare/delete', {
         method: 'POST',
@@ -93,12 +95,12 @@ export default function AdminOsharePage() {
       })
       const data = await res.json()
       if (data.error) {
-        alert('删除失败: ' + data.error)
+        toast('删除失败: ' + data.error, 'error')
       } else {
         setFiles((prev) => (prev || []).filter((f) => f.key !== key))
       }
     } catch (err) {
-      alert('删除失败: ' + err.message)
+      toast('删除失败: ' + err.message, 'error')
     }
   }
 

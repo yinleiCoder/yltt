@@ -23,6 +23,7 @@ import 'react-day-picker/style.css'
 import EmojiPicker from 'emoji-picker-react'
 import { getFileUrl, getOssKey } from '@/lib/oss-client'
 import { useUploads } from '@/contexts/upload-context'
+import { useToast } from '@/components/ui/toast'
 import { STORY_CATEGORY_OPTIONS } from '@/lib/constants'
 
 const mediaTypes = [
@@ -34,6 +35,7 @@ const mediaTypes = [
 export default function AdminStoriesPage() {
   const { stories, isLoaded, addStory, updateStory, deleteStory } = useData()
   const { addUpload } = useUploads()
+  const { toast, confirm } = useToast()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editStory, setEditStory] = useState(null)
   const [form, setForm] = useState({ title: '', content: '', story_date: '', category: 'daily', published: true, cover_emoji: '💕', media_url: '', media_type: '' })
@@ -64,7 +66,7 @@ export default function AdminStoriesPage() {
         pendingOssKeyRef.current = data.key
       },
       onError: (msg) => {
-        alert('上传失败: ' + msg)
+        toast('上传失败: ' + msg, 'error')
         setUploading(false)
       },
     })
@@ -107,7 +109,7 @@ export default function AdminStoriesPage() {
         }).catch(() => {})
         pendingOssKeyRef.current = null
       }
-      alert('保存失败: ' + e.message)
+      toast('保存失败: ' + e.message, 'error')
     }
   }
 
@@ -116,19 +118,19 @@ export default function AdminStoriesPage() {
     try {
       await updateStory(s.id, { published: !s.published })
     } catch (e) {
-      alert('操作失败: ' + e.message)
+      toast('操作失败: ' + e.message, 'error')
     }
     setToggling(null)
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('确认删除？')) return
+    if (!await confirm('确认删除？', '删除故事')) return
     const story = stories?.find(s => s.id === id)
     if (story?.media_url) {
       const key = getOssKey(story.media_url)
       if (key) await fetch('/api/oss/delete', { method: 'POST', body: JSON.stringify({ key }), headers: { 'Content-Type': 'application/json' } })
     }
-    try { await deleteStory(id) } catch (e) { alert('删除失败: ' + e.message) }
+    try { await deleteStory(id) } catch (e) { toast('删除失败: ' + e.message, 'error') }
   }
 
   const selectedDate = form.story_date ? new Date(form.story_date) : undefined
@@ -248,7 +250,7 @@ export default function AdminStoriesPage() {
                           <span className="text-xs text-muted-foreground">点击上传{form.media_type === 'video' ? '视频' : '图片'}</span>
                         </div>
                       )}
-                      <input type="file" accept={form.media_type === 'video' ? 'video/mp4,video/webm' : 'image/*'} className="hidden" onChange={handleMediaUpload} disabled={uploading} />
+                      <input type="file" accept={form.media_type === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/*'} className="hidden" onChange={handleMediaUpload} disabled={uploading} />
                     </label>
                   )}
                 </div>

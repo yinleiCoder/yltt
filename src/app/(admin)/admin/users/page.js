@@ -13,9 +13,11 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Search, Shield, Trash2, User, Mail, MapPin } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 export default function AdminUsersPage() {
   const { supabase, profile } = useAuth()
+  const { toast, confirm } = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -29,7 +31,7 @@ export default function AdminUsersPage() {
   }, { scope: sectionRef, dependencies: [loading, users.length] })
 
   const changeRole = async (uid, role) => { await supabase.from('profiles').update({ role }).eq('id', uid); await loadUsers() }
-  const deleteUser = async (uid) => { if (!confirm('确认删除？')) return; await supabase.from('profiles').delete().eq('id', uid); await loadUsers() }
+  const deleteUser = async (uid) => { if (!await confirm('确认删除？', '删除用户')) return; await supabase.from('profiles').delete().eq('id', uid); await loadUsers() }
 
   const filtered = users.filter(u => { const q = search.toLowerCase(); return (u.display_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) })
 

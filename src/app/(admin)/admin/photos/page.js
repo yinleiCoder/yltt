@@ -15,10 +15,12 @@ import { Plus, Trash2, Loader2, Upload, Image, X } from 'lucide-react'
 import { getFileUrl, getOssKey } from '@/lib/oss-client'
 import exifr from 'exifr'
 import { useUploads } from '@/contexts/upload-context'
+import { useToast } from '@/components/ui/toast'
 
 export default function AdminPhotosPage() {
   const { photos, isLoaded, addPhoto, deletePhoto } = useData()
   const { addUpload } = useUploads()
+  const { toast, confirm } = useToast()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -61,7 +63,7 @@ export default function AdminPhotosPage() {
           setTitle(''); setDialogOpen(false); setUploading(false)
         } catch (err) {
           setUploading(false)
-          alert('添加照片失败: ' + err.message)
+          toast('添加照片失败: ' + err.message, 'error')
           // Clean up orphaned OSS file
           if (data.key) {
             fetch('/api/oss/delete', {
@@ -72,18 +74,18 @@ export default function AdminPhotosPage() {
           }
         }
       },
-      onError: (msg) => { alert('上传失败: ' + msg); setUploading(false) },
+      onError: (msg) => { toast('上传失败: ' + msg, 'error'); setUploading(false) },
     })
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('确认删除这张照片？')) return
+    if (!await confirm('确认删除这张照片？', '删除照片')) return
     const photo = photos?.find(p => p.id === id)
     if (photo?.url) {
       const key = getOssKey(photo.url)
       if (key) await fetch('/api/oss/delete', { method: 'POST', body: JSON.stringify({ key }), headers: { 'Content-Type': 'application/json' } })
     }
-    try { await deletePhoto(id) } catch (e) { alert('删除失败: ' + e.message) }
+    try { await deletePhoto(id) } catch (e) { toast('删除失败: ' + e.message, 'error') }
   }
 
   return (

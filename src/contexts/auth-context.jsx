@@ -9,7 +9,9 @@ export function AuthProvider({ children, initialUser }) {
   const [user, setUser] = useState(initialUser || null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(!initialUser)
-  const supabase = createClient()
+  const supabaseRef = useRef(null)
+  if (!supabaseRef.current) supabaseRef.current = createClient()
+  const supabase = supabaseRef.current
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
