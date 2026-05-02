@@ -217,3 +217,35 @@ CREATE TRIGGER trg_stories_updated_at BEFORE UPDATE ON stories
 DROP TRIGGER IF EXISTS trg_videos_updated_at ON videos;
 CREATE TRIGGER trg_videos_updated_at BEFORE UPDATE ON videos
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- 密码保险箱 Vault
+-- ============================================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS vault_salt TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS vault_verify TEXT;
+
+CREATE TABLE IF NOT EXISTS passwords (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  category TEXT DEFAULT '未分类',
+  title_encrypted TEXT NOT NULL,
+  username_encrypted TEXT NOT NULL,
+  password_encrypted TEXT NOT NULL,
+  url_encrypted TEXT DEFAULT '',
+  notes_encrypted TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE passwords ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "passwords_select_own" ON passwords FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "passwords_insert_own" ON passwords FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "passwords_update_own" ON passwords FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "passwords_delete_own" ON passwords FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_passwords_user_id ON passwords(user_id);
+CREATE INDEX IF NOT EXISTS idx_passwords_created_at ON passwords(created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_passwords_updated_at ON passwords;
+CREATE TRIGGER trg_passwords_updated_at BEFORE UPDATE ON passwords
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

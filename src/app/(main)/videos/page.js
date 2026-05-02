@@ -169,13 +169,6 @@ export default function VideosPage() {
                   <DialogTitle className="text-sm font-medium">{previewVideo.title}</DialogTitle>
                   {previewVideo.description && <p className="text-xs text-muted-foreground mt-0.5">{previewVideo.description}</p>}
                 </div>
-                <button
-                  className="shrink-0 w-8 h-8 rounded-full bg-accent/50 hover:bg-primary/10 flex items-center justify-center transition-colors"
-                  onClick={() => addDownload(previewVideo.url, previewVideo.title.endsWith('.mp4') ? previewVideo.title : previewVideo.title + '.mp4')}
-                  title="下载视频"
-                >
-                  <Download size={15} className="text-muted-foreground hover:text-primary" />
-                </button>
               </div>
               <div className="bg-black rounded-b-lg overflow-hidden flex justify-center">
                 <MediaController className="max-w-full max-h-[80vh]">
@@ -185,11 +178,11 @@ export default function VideosPage() {
                     <MediaSeekBackwardButton />
                     <MediaSeekForwardButton />
                     <MediaTimeRange />
-                    <MediaTimeDisplay />
+                    {/* <MediaTimeDisplay /> */}
                     <MediaDurationDisplay />
                     <MediaMuteButton />
                     <MediaVolumeRange />
-                    <MediaCaptionsButton />
+                    {/* <MediaCaptionsButton /> */}
                     <MediaPlaybackRateButton />
                     <MediaPipButton />
                     <MediaFullscreenButton />

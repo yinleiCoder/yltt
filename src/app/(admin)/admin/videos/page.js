@@ -176,11 +176,11 @@ export default function AdminVideosPage() {
                         <MediaSeekBackwardButton />
                         <MediaSeekForwardButton />
                         <MediaTimeRange />
-                        <MediaTimeDisplay />
+                        {/* <MediaTimeDisplay /> */}
                         <MediaDurationDisplay />
                         <MediaMuteButton />
                         <MediaVolumeRange />
-                        <MediaCaptionsButton />
+                        {/* <MediaCaptionsButton /> */}
                         <MediaPlaybackRateButton />
                       </MediaControlBar>
                     </MediaController>
