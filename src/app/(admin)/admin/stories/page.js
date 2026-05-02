@@ -43,13 +43,14 @@ export default function AdminStoriesPage() {
   const [dateOpen, setDateOpen] = useState(false)
   const [toggling, setToggling] = useState(null)
   const sectionRef = useRef(null)
+  const pendingOssKeyRef = useRef(null)
 
   useGSAP(() => {
     gsap.set('.story-row', { y: 12, opacity: 0 }); gsap.to('.story-row', { y: 0, opacity: 1, duration: 0.3, stagger: 0.04, ease: 'power3.out' })
   }, { scope: sectionRef, dependencies: [isLoaded, stories?.length] })
 
-  const openCreate = () => { setEditStory(null); setForm({ title: '', content: '', story_date: format(new Date(), 'yyyy-MM-dd'), category: 'daily', published: true, cover_emoji: '💕', media_url: '', media_type: '' }); setDialogOpen(true) }
-  const openEdit = (s) => { setEditStory(s); setForm({ title: s.title || '', content: s.content || '', story_date: s.story_date || '', category: s.category || 'daily', published: s.published ?? true, cover_emoji: s.cover_emoji || '💕', media_url: s.media_url || '', media_type: s.media_type || '' }); setDialogOpen(true) }
+  const openCreate = () => { setEditStory(null); setForm({ title: '', content: '', story_date: format(new Date(), 'yyyy-MM-dd'), category: 'daily', published: true, cover_emoji: '💕', media_url: '', media_type: '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
+  const openEdit = (s) => { setEditStory(s); setForm({ title: s.title || '', content: s.content || '', story_date: s.story_date || '', category: s.category || 'daily', published: s.published ?? true, cover_emoji: s.cover_emoji || '💕', media_url: s.media_url || '', media_type: s.media_type || '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
 
   const handleMediaUpload = (e) => {
     const file = e.target.files?.[0]; if (!file) return
@@ -60,6 +61,7 @@ export default function AdminStoriesPage() {
       onSuccess: (data) => {
         setForm((prev) => ({ ...prev, media_url: data.url }))
         setUploading(false)
+        pendingOssKeyRef.current = data.key
       },
       onError: (msg) => {
         alert('上传失败: ' + msg)
@@ -92,9 +94,19 @@ export default function AdminStoriesPage() {
       } else {
         await addStory(payload)
       }
+      pendingOssKeyRef.current = null
       setSaving(false); setDialogOpen(false)
     } catch (e) {
       setSaving(false)
+      // Clean up orphaned OSS file from this upload session
+      if (pendingOssKeyRef.current) {
+        fetch('/api/oss/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: pendingOssKeyRef.current }),
+        }).catch(() => {})
+        pendingOssKeyRef.current = null
+      }
       alert('保存失败: ' + e.message)
     }
   }
@@ -243,7 +255,7 @@ export default function AdminStoriesPage() {
               )}
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">{saving ? <Loader2 size={14} className="animate-spin mr-2" /> : null}{editStory ? '保存修改' : '发布故事'}</Button>
+            <Button onClick={handleSave} disabled={saving || uploading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">{saving ? <Loader2 size={14} className="animate-spin mr-2" /> : null}{editStory ? '保存修改' : '发布故事'}</Button>
           </div>
         </DialogContent>
       </Dialog>

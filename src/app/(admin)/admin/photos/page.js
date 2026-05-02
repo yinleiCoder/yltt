@@ -56,8 +56,21 @@ export default function AdminPhotosPage() {
     addUpload(file, '/api/upload/sign', {
       folder: 'photos',
       onSuccess: async (data) => {
-        await addPhoto({ url: data.url, title: title || file.name, ...exif })
-        setTitle(''); setDialogOpen(false); setUploading(false)
+        try {
+          await addPhoto({ url: data.url, title: title || file.name, ...exif })
+          setTitle(''); setDialogOpen(false); setUploading(false)
+        } catch (err) {
+          setUploading(false)
+          alert('添加照片失败: ' + err.message)
+          // Clean up orphaned OSS file
+          if (data.key) {
+            fetch('/api/oss/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key: data.key }),
+            }).catch(() => {})
+          }
+        }
       },
       onError: (msg) => { alert('上传失败: ' + msg); setUploading(false) },
     })

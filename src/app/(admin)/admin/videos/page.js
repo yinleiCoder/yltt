@@ -30,13 +30,23 @@ export default function AdminVideosPage() {
   const [previewVideo, setPreviewVideo] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const sectionRef = useRef(null)
+  const pendingOssKeyRef = useRef(null)
+
+  const deleteOssFile = async (key) => {
+    if (!key) return
+    await fetch('/api/oss/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    }).catch(() => {})
+  }
 
   useGSAP(() => {
     gsap.set('.video-row', { y: 12, opacity: 0 }); gsap.to('.video-row', { y: 0, opacity: 1, duration: 0.3, stagger: 0.04, ease: 'power3.out' })
   }, { scope: sectionRef, dependencies: [isLoaded, videos?.length] })
 
-  const openCreate = () => { setEditVideo(null); setForm({ title: '', description: '', url: '', ossKey: '' }); setDialogOpen(true) }
-  const openEdit = (v) => { setEditVideo(v); setForm({ title: v.title || '', description: v.description || '', url: v.url || '', ossKey: v.oss_key || '' }); setDialogOpen(true) }
+  const openCreate = () => { setEditVideo(null); setForm({ title: '', description: '', url: '', ossKey: '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
+  const openEdit = (v) => { setEditVideo(v); setForm({ title: v.title || '', description: v.description || '', url: v.url || '', ossKey: v.oss_key || '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
 
   const handleVideoUpload = (e) => {
     const file = e.target.files?.[0]; if (!file) return
@@ -47,6 +57,7 @@ export default function AdminVideosPage() {
         setForm((prev) => ({ ...prev, url: data.url, ossKey: data.key }))
         setPreviewUrl(data.signedUrl || data.url)
         setUploading(false)
+        pendingOssKeyRef.current = data.key
       },
       onError: (msg) => {
         alert('上传失败: ' + msg)
@@ -58,7 +69,9 @@ export default function AdminVideosPage() {
   const removeUrl = () => setForm((prev) => ({ ...prev, url: '' }))
 
   const handleSave = async () => {
-    if (!form.title.trim()) return; setSaving(true)
+    if (!form.title.trim()) return
+    if (!form.url && !editVideo) return
+    setSaving(true)
     const payload = { title: form.title, description: form.description, url: form.url, oss_key: form.ossKey }
     try {
       if (editVideo) {
@@ -66,9 +79,12 @@ export default function AdminVideosPage() {
       } else {
         await addVideo(payload)
       }
+      pendingOssKeyRef.current = null
       setSaving(false); setDialogOpen(false)
     } catch (e) {
       setSaving(false)
+      await deleteOssFile(pendingOssKeyRef.current)
+      pendingOssKeyRef.current = null
       alert('保存失败: ' + e.message)
     }
   }
@@ -150,9 +166,9 @@ export default function AdminVideosPage() {
 
               {form.url ? (
                 <div className="space-y-2">
-                  <div className="relative rounded-lg overflow-hidden border border-border bg-black">
-                    <MediaController className="w-full max-h-64">
-                      <video slot="media" src={previewUrl || form.url} playsInline className="w-full" />
+                  <div className="relative rounded-lg overflow-hidden border border-border bg-black flex justify-center">
+                    <MediaController className="max-w-full max-h-64">
+                      <video slot="media" src={previewUrl || form.url} playsInline className="max-w-full max-h-64" />
                       <MediaControlBar>
                         <MediaPlayButton />
                         <MediaSeekBackwardButton />
@@ -191,24 +207,24 @@ export default function AdminVideosPage() {
               )}
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">{saving ? <Loader2 size={14} className="animate-spin mr-2" /> : null}{editVideo ? '保存修改' : '添加视频'}</Button>
+            <Button onClick={handleSave} disabled={saving || uploading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">{saving ? <Loader2 size={14} className="animate-spin mr-2" /> : null}{editVideo ? '保存修改' : '添加视频'}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl sm:max-w-3xl bg-card border-border p-1" showCloseButton={true}>
+        <DialogContent className="max-w-[min(95vw,calc(85vh*16/9))] sm:max-w-[min(90vw,calc(85vh*16/9))] bg-card border-border p-1" showCloseButton={true}>
           {previewVideo && (
             <div className="flex flex-col">
               <div className="px-4 py-3">
                 <DialogTitle className="text-sm font-medium">{previewVideo.title}</DialogTitle>
                 {previewVideo.description && <p className="text-xs text-muted-foreground mt-0.5">{previewVideo.description}</p>}
               </div>
-              <div className="bg-black rounded-b-lg overflow-hidden">
+              <div className="bg-black rounded-b-lg overflow-hidden flex justify-center">
                 {previewUrl ? (
-                  <MediaController className="w-full max-h-[70vh]">
-                    <video slot="media" src={previewUrl} autoPlay playsInline className="w-full" />
+                  <MediaController className="max-w-full max-h-[80vh]">
+                    <video slot="media" src={previewUrl} autoPlay playsInline className="max-w-full max-h-[80vh]" />
                     <MediaControlBar>
                       <MediaPlayButton />
                       <MediaSeekBackwardButton />
