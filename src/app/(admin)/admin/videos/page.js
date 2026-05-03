@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
 gsap.registerPlugin(useGSAP)
+import { useAuth } from '@/contexts/auth-context'
 import { useData } from '@/contexts/data-context'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from '@/components/ui/pagination'
 import { Edit, Plus, Trash2, Loader2, Upload, Video, X, Play, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { getOssKey } from '@/lib/oss-client'
@@ -19,8 +21,23 @@ import { useUploads } from '@/contexts/upload-context'
 import { useToast } from '@/components/ui/toast'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
 
+const PAGE_SIZE = 10
+
+function generatePageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = [1]
+  if (current > 3) pages.push('...')
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+    pages.push(i)
+  }
+  if (current < total - 2) pages.push('...')
+  pages.push(total)
+  return pages
+}
+
 export default function AdminVideosPage() {
-  const { videos, isLoaded, addVideo, updateVideo, deleteVideo } = useData()
+  const { supabase } = useAuth()
+  const { addVideo, updateVideo, deleteVideo } = useData()
   const { addUpload } = useUploads()
   const { toast, confirm } = useToast()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -34,6 +51,58 @@ export default function AdminVideosPage() {
   const sectionRef = useRef(null)
   const pendingOssKeyRef = useRef(null)
 
+  // Pagination state
+  const [videos, setVideos] = useState([])
+  const [loaded, setLoaded] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [pageLoading, setPageLoading] = useState(false)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  const loadVideos = useCallback(async (pageNum) => {
+    setPageLoading(true)
+    try {
+      const from = (pageNum - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+      const { data } = await supabase
+        .from('videos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+      setVideos(data || [])
+    } catch {
+      setVideos([])
+    } finally {
+      setLoaded(true)
+      setPageLoading(false)
+    }
+  }, [supabase])
+
+  // Get total count on mount
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { count } = await supabase
+          .from('videos')
+          .select('*', { count: 'exact', head: true })
+        if (!cancelled) setTotalCount(count || 0)
+      } catch { /* fail silently */ }
+    })()
+    return () => { cancelled = true }
+  }, [supabase])
+
+  // Load page data
+  useEffect(() => {
+    loadVideos(page)
+  }, [page, loadVideos])
+
+  const handlePageChange = (newPage) => {
+    if (newPage === page || newPage < 1 || newPage > totalPages || pageLoading) return
+    setPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const deleteOssFile = async (key) => {
     if (!key) return
     await fetch('/api/oss/delete', {
@@ -45,7 +114,7 @@ export default function AdminVideosPage() {
 
   useGSAP(() => {
     gsap.set('.video-row', { y: 12, opacity: 0 }); gsap.to('.video-row', { y: 0, opacity: 1, duration: 0.3, stagger: 0.04, ease: 'power3.out' })
-  }, { scope: sectionRef, dependencies: [isLoaded, videos?.length] })
+  }, { scope: sectionRef, dependencies: [loaded, videos?.length] })
 
   const openCreate = () => { setEditVideo(null); setForm({ title: '', description: '', url: '', ossKey: '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
   const openEdit = (v) => { setEditVideo(v); setForm({ title: v.title || '', description: v.description || '', url: v.url || '', ossKey: v.oss_key || '' }); pendingOssKeyRef.current = null; setDialogOpen(true) }
@@ -83,6 +152,12 @@ export default function AdminVideosPage() {
       }
       pendingOssKeyRef.current = null
       setSaving(false); setDialogOpen(false)
+      // Refresh current page + total count
+      const { count } = await supabase
+        .from('videos')
+        .select('*', { count: 'exact', head: true })
+      setTotalCount(count || 0)
+      loadVideos(page)
     } catch (e) {
       setSaving(false)
       await deleteOssFile(pendingOssKeyRef.current)
@@ -104,54 +179,112 @@ export default function AdminVideosPage() {
       const key = video.oss_key || getOssKey(video.url)
       if (key) await fetch('/api/oss/delete', { method: 'POST', body: JSON.stringify({ key }), headers: { 'Content-Type': 'application/json' } })
     }
-    try { await deleteVideo(id) } catch (e) { toast('删除失败: ' + e.message, 'error') }
+    try {
+      await deleteVideo(id)
+      // Refresh current page + total count
+      const { count } = await supabase
+        .from('videos')
+        .select('*', { count: 'exact', head: true })
+      setTotalCount(count || 0)
+      // If we deleted the last item on a page > 1, go back one page
+      const newTotalPages = Math.max(1, Math.ceil((count || 1) / PAGE_SIZE))
+      const effectivePage = page > newTotalPages ? newTotalPages : page
+      if (effectivePage !== page) setPage(effectivePage)
+      else loadVideos(effectivePage)
+    } catch (e) { toast('删除失败: ' + e.message, 'error') }
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-5">
-        <div><h1 className="text-xl font-bold text-foreground tracking-tight mb-1">视频管理</h1><p className="text-xs text-muted-foreground">共 {videos?.length || 0} 个视频</p></div>
+        <div><h1 className="text-xl font-bold text-foreground tracking-tight mb-1">视频管理</h1><p className="text-xs text-muted-foreground">共 {totalCount} 个视频</p></div>
         <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 gap-1.5"><Plus size={14} />添加视频</Button>
       </div>
 
-      <Card ref={sectionRef} className="surface-card">
-        <CardContent className="p-0">
-          <div className="divide-y divide-border">
-            {videos?.map((v) => (
-              <div key={v.id} className="video-row flex items-center gap-3 p-3 hover:bg-accent/30 transition-colors">
-                <div
-                  className="w-24 h-14 rounded bg-accent flex items-center justify-center shrink-0 cursor-pointer relative group overflow-hidden"
-                  onClick={() => openPreview(v)}
-                >
-                  {v.url ? (
-                    <>
-                      <div className="w-full h-full bg-black/40 absolute inset-0 flex items-center justify-center">
-                        <Play size={16} className="text-white/80 group-hover:scale-110 transition-transform" />
+      {!loaded ? (
+        <div className="text-center py-20"><Loader2 size={20} className="mx-auto text-primary animate-spin" /></div>
+      ) : videos.length === 0 ? (
+        <Card className="surface-card"><CardContent className="text-center py-12 text-xs text-muted-foreground">还没有视频</CardContent></Card>
+      ) : (
+        <>
+          <Card ref={sectionRef} className="surface-card">
+            <CardContent className={`p-0 transition-opacity duration-200 ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className="divide-y divide-border">
+                {videos?.map((v) => (
+                  <div key={v.id} className="video-row flex items-center gap-3 p-3 hover:bg-accent/30 transition-colors">
+                    <div
+                      className="w-24 h-14 rounded bg-accent flex items-center justify-center shrink-0 cursor-pointer relative group overflow-hidden"
+                      onClick={() => openPreview(v)}
+                    >
+                      {v.url ? (
+                        <>
+                          <div className="w-full h-full bg-black/40 absolute inset-0 flex items-center justify-center">
+                            <Play size={16} className="text-white/80 group-hover:scale-110 transition-transform" />
+                          </div>
+                          <video src={v.url} className="w-full h-full object-cover" preload="metadata" />
+                        </>
+                      ) : (
+                        <Play size={16} className="text-muted-foreground/30" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-medium text-foreground truncate">{v.title}</p>
+                        {v.url && <ExternalLink size={10} className="text-muted-foreground/50 shrink-0" />}
                       </div>
-                      <video src={v.url} className="w-full h-full object-cover" preload="metadata" />
-                    </>
-                  ) : (
-                    <Play size={16} className="text-muted-foreground/30" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium text-foreground truncate">{v.title}</p>
-                    {v.url && <ExternalLink size={10} className="text-muted-foreground/50 shrink-0" />}
+                      <p className="text-[10px] text-muted-foreground truncate">{v.description || '暂无描述'}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">{v.created_at ? format(new Date(v.created_at), 'yyyy-MM-dd HH:mm') : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/50 hover:text-primary" onClick={() => openEdit(v)}><Edit size={13} /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/50 hover:text-destructive" onClick={() => handleDelete(v.id)}><Trash2 size={13} /></Button>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground truncate">{v.description || '暂无描述'}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">{v.created_at ? format(new Date(v.created_at), 'yyyy-MM-dd HH:mm') : ''}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/50 hover:text-primary" onClick={() => openEdit(v)}><Edit size={13} /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/50 hover:text-destructive" onClick={() => handleDelete(v.id)}><Trash2 size={13} /></Button>
-                </div>
+                ))}
               </div>
-            ))}
-            {videos?.length === 0 && <div className="text-center py-12 text-xs text-muted-foreground">还没有视频</div>}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          {totalCount > 0 && (
+            <div className="flex justify-center mt-8 mb-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(page - 1); }}
+                      disabled={page <= 1 || pageLoading}
+                    />
+                  </PaginationItem>
+                  {generatePageNumbers(page, totalPages).map((p, i) => (
+                    <PaginationItem key={`${p}-${i}`}>
+                      {p === '...' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href="#"
+                          isActive={p === page}
+                          onClick={(e) => { e.preventDefault(); handlePageChange(p); }}
+                          disabled={pageLoading}
+                        >
+                          {p}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(page + 1); }}
+                      disabled={page >= totalPages || pageLoading}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

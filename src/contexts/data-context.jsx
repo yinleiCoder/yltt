@@ -14,8 +14,12 @@ export function DataProvider({ children }) {
 
   // ── Photos ──────────────────────────────────────────
   const loadPhotos = useCallback(async () => {
-    const { data } = await supabase.from('photos').select('*').order('created_at', { ascending: false })
-    setPhotos(data || [])
+    try {
+      const { data } = await supabase.from('photos').select('*').order('created_at', { ascending: false })
+      setPhotos(data || [])
+    } catch {
+      setPhotos([])
+    }
   }, [supabase])
 
   const addPhoto = useCallback(async (payload) => {
@@ -33,8 +37,12 @@ export function DataProvider({ children }) {
 
   // ── Videos ──────────────────────────────────────────
   const loadVideos = useCallback(async () => {
-    const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
-    setVideos(data || [])
+    try {
+      const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
+      setVideos(data || [])
+    } catch {
+      setVideos([])
+    }
   }, [supabase])
 
   const addVideo = useCallback(async (payload) => {
@@ -58,8 +66,12 @@ export function DataProvider({ children }) {
 
   // ── Stories ─────────────────────────────────────────
   const loadStories = useCallback(async () => {
-    const { data } = await supabase.from('stories').select('*').order('story_date', { ascending: true })
-    setStories(data || [])
+    try {
+      const { data } = await supabase.from('stories').select('*').order('story_date', { ascending: true })
+      setStories(data || [])
+    } catch {
+      setStories([])
+    }
   }, [supabase])
 
   const addStory = useCallback(async (payload) => {
@@ -91,8 +103,12 @@ export function DataProvider({ children }) {
 
   // ── Blessings ───────────────────────────────────────
   const loadBlessings = useCallback(async () => {
-    const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
-    setBlessings(data || [])
+    try {
+      const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
+      setBlessings(data || [])
+    } catch {
+      setBlessings([])
+    }
   }, [supabase])
 
   const addBlessing = useCallback(async (payload) => {

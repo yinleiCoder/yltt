@@ -39,10 +39,12 @@ export default function VideosPage() {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const { count } = await supabase
-        .from('videos')
-        .select('*', { count: 'exact', head: true })
-      if (!cancelled) setTotalCount(count || 0)
+      try {
+        const { count } = await supabase
+          .from('videos')
+          .select('*', { count: 'exact', head: true })
+        if (!cancelled) setTotalCount(count || 0)
+      } catch { /* fail silently */ }
     })()
     return () => { cancelled = true }
   }, [supabase])
@@ -52,17 +54,24 @@ export default function VideosPage() {
     let cancelled = false
     ;(async () => {
       setPageLoading(true)
-      const from = (page - 1) * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-      const { data } = await supabase
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(from, to)
-      if (cancelled) return
-      setVideos(data || [])
-      setLoaded(true)
-      setPageLoading(false)
+      try {
+        const from = (page - 1) * PAGE_SIZE
+        const to = from + PAGE_SIZE - 1
+        const { data } = await supabase
+          .from('videos')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, to)
+        if (cancelled) return
+        setVideos(data || [])
+      } catch {
+        if (!cancelled) setVideos([])
+      } finally {
+        if (!cancelled) {
+          setLoaded(true)
+          setPageLoading(false)
+        }
+      }
     })()
     return () => { cancelled = true }
   }, [page, supabase])

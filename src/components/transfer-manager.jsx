@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -82,6 +82,55 @@ export function TransferManager() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const userClosedRef = useRef(false)
 
+  // Drag state — always start at default to avoid hydration mismatch
+  const [pos, setPos] = useState({ right: 16, top: 16 })
+  const posRef = useRef(pos)
+  posRef.current = pos
+
+  // Load saved position after mount (client only)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('transfer-mgr-pos')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setPos(parsed)
+        posRef.current = parsed
+      }
+    } catch {}
+  }, [])
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, origRight: 0, origTop: 0, moved: false })
+
+  const onTriggerPointerDown = useCallback((e) => {
+    e.preventDefault()
+    dragRef.current = {
+      dragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origRight: posRef.current.right,
+      origTop: posRef.current.top,
+      moved: false,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const onTriggerPointerMove = useCallback((e) => {
+    if (!dragRef.current.dragging) return
+    const dx = dragRef.current.startX - e.clientX
+    const dy = e.clientY - dragRef.current.startY
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return
+    dragRef.current.moved = true
+    const newRight = Math.max(0, Math.min(window.innerWidth - 40, dragRef.current.origRight + dx))
+    const newTop = Math.max(0, Math.min(window.innerHeight - 40, dragRef.current.origTop + dy))
+    setPos({ right: newRight, top: newTop })
+  }, [])
+
+  const onTriggerPointerUp = useCallback(() => {
+    if (dragRef.current.dragging) {
+      try { localStorage.setItem('transfer-mgr-pos', JSON.stringify(posRef.current)) } catch {}
+      dragRef.current.dragging = false
+    }
+  }, [])
+
   const activeDownloads = downloads.filter((d) => d.status !== 'done')
   const activeUploads = uploads.filter((u) => u.status !== 'done')
   const doneDownloads = downloads.filter((d) => d.status === 'done')
@@ -110,12 +159,21 @@ export function TransferManager() {
   const filteredItems = tab === 'all' ? allItems : allItems.filter((i) => i._type === tab)
 
   return (
-    <Popover open={popoverOpen} onOpenChange={(open) => { setPopoverOpen(open); if (!open) userClosedRef.current = true }}>
+    <div
+      className="fixed z-[60] select-none"
+      style={{ right: pos.right, top: pos.top }}
+    >
+    <Popover open={popoverOpen} onOpenChange={(open) => { if (dragRef.current.moved) return; setPopoverOpen(open); if (!open) userClosedRef.current = true }}>
       <PopoverTrigger render={
-        <button className="relative w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center hover:bg-accent transition-colors">
-          <Activity size={15} className={`${totalActive > 0 ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+        <button
+          className="relative w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center hover:bg-accent transition-colors cursor-grab active:cursor-grabbing touch-none"
+          onPointerDown={onTriggerPointerDown}
+          onPointerMove={onTriggerPointerMove}
+          onPointerUp={onTriggerPointerUp}
+        >
+          <Activity size={15} className={`${totalActive > 0 ? 'text-primary animate-pulse' : 'text-muted-foreground'} pointer-events-none`} />
           {totalActive > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center px-1">
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center px-1 pointer-events-none">
               {totalActive}
             </span>
           )}
@@ -181,5 +239,6 @@ export function TransferManager() {
         )}
       </PopoverContent>
     </Popover>
+    </div>
   )
 }

@@ -9,9 +9,7 @@ export function Shell({ children }) {
         <div className="min-h-screen p-6 lg:p-8 max-w-7xl mx-auto">
           {children}
         </div>
-        <div className="fixed top-4 right-4 z-[60]">
-          <TransferManager />
-        </div>
+        <TransferManager />
       </main>
     </div>
   )

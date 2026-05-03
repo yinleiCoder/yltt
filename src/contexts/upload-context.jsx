@@ -81,6 +81,12 @@ export function UploadProvider({ children }) {
           options.onError?.('上传超时')
         }
 
+        xhr.onabort = () => {
+          delete xhrRef.current[id]
+          update(id, { status: 'paused' })
+          options.onError?.('上传已暂停')
+        }
+
         xhr.open('PUT', signData.signedUrl)
         xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
         xhr.timeout = 600000
@@ -160,6 +166,7 @@ export function UploadProvider({ children }) {
 
             xhr.onerror = () => reject(new Error('网络错误'))
             xhr.ontimeout = () => reject(new Error('上传超时'))
+            xhr.onabort = () => reject(new Error('__USER_CANCELLED__'))
 
             xhr.open('PUT', part.signedUrl)
             xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
@@ -188,6 +195,21 @@ export function UploadProvider({ children }) {
         update(id, { status: 'done', progress: 100, loadedSize: file.size })
         options.onSuccess?.({ url, key })
       } catch (err) {
+        if (err.message === '__USER_CANCELLED__') {
+          update(id, { status: 'paused' })
+          options.onError?.('上传已暂停')
+          // Clean up incomplete multipart upload on server
+          const meta = mpMetaRef.current[id]
+          if (meta) {
+            fetch('/api/upload/multipart/abort', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ uploadId: meta.uploadId, key: meta.key }),
+            }).catch(() => {})
+            delete mpMetaRef.current[id]
+          }
+          return
+        }
         update(id, { status: 'error', error: err.message })
         options.onError?.(err.message)
 
@@ -240,9 +262,7 @@ export function UploadProvider({ children }) {
       }).catch(() => {})
       delete mpMetaRef.current[id]
     }
-
-    update(id, { status: 'paused' })
-  }, [update])
+  }, [])
 
   const removeUpload = useCallback((id) => {
     xhrRef.current[id]?.abort()
