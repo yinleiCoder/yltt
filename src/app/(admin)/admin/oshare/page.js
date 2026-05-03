@@ -10,6 +10,10 @@ import { useDownloads } from '@/contexts/download-context'
 import { formatSize } from '@/lib/utils'
 import { Upload, Trash2, Loader2, FolderOpen, File, Download, X, Check, AlertCircle, Play } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 let queueId = 0
 
@@ -17,6 +21,13 @@ export default function AdminOsharePage() {
   const [files, setFiles] = useState(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const fileListRef = useRef(null)
+
+  useGSAP(() => {
+    if (!files || files.length === 0) return
+    gsap.set('.oshare-file', { y: 16, opacity: 0 })
+    gsap.to('.oshare-file', { y: 0, opacity: 1, duration: 0.35, stagger: 0.05, ease: 'power3.out' })
+  }, { scope: fileListRef, dependencies: [files] })
   const [queue, setQueue] = useState([])
   const [running, setRunning] = useState(false)
   const fileInputRef = useRef(null)
@@ -159,9 +170,9 @@ export default function AdminOsharePage() {
       )}
 
       {files !== null && files.length > 0 && (
-        <div className="space-y-2">
+        <div ref={fileListRef} className="space-y-2">
           {files.map((f) => (
-            <Card key={f.key} className="surface-card group">
+            <Card key={f.key} className="oshare-file surface-card group">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center shrink-0">
                   <File size={14} className="text-muted-foreground/50" />

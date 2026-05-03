@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Download, ExternalLink, Package, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { softwareList } from '@/lib/opensource-data'
+
+gsap.registerPlugin(useGSAP)
 
 function ImageGallery({ images, name }) {
   const [activeIdx, setActiveIdx] = useState(0)
@@ -100,6 +104,14 @@ function ImageGallery({ images, name }) {
 }
 
 export default function OpensourcePage() {
+  const gridRef = useRef(null)
+
+  useGSAP(() => {
+    if (softwareList.length === 0) return
+    gsap.set('.oss-card', { y: 30, opacity: 0 })
+    gsap.to('.oss-card', { y: 0, opacity: 1, duration: 0.45, stagger: 0.08, ease: 'power3.out' })
+  }, { scope: gridRef })
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
@@ -113,9 +125,9 @@ export default function OpensourcePage() {
           <p className="text-sm text-muted-foreground">暂无开源项目</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div ref={gridRef} className="grid gap-4">
           {softwareList.map((sw) => (
-            <Card key={sw.id} className="surface-card overflow-hidden">
+            <Card key={sw.id} className="oss-card surface-card overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col sm:flex-row">
                   <ImageGallery images={sw.images} name={sw.name} />

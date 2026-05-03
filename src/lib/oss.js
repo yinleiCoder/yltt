@@ -11,4 +11,4 @@ export function createOSSClient() {
   })
 }
 
-export { getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, MAX_FILE_SIZE } from './oss-client'
+export { getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES, MAX_FILE_SIZE } from './oss-client'

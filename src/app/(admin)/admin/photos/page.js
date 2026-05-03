@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from '@/components/ui/pagination'
-import { Plus, Trash2, Loader2, Upload, Image, X, Check, AlertCircle, Play } from 'lucide-react'
+import { Plus, Trash2, Loader2, Upload, Image, X, Check, AlertCircle, Play, Edit } from 'lucide-react'
 import { getFileUrl, getOssKey } from '@/lib/oss-client'
 import { formatSize } from '@/lib/utils'
 import exifr from 'exifr'
@@ -39,13 +39,17 @@ let queueId = 0
 
 export default function AdminPhotosPage() {
   const { supabase } = useAuth()
-  const { addPhoto, deletePhoto } = useData()
+  const { addPhoto, updatePhoto, deletePhoto } = useData()
   const { addUpload } = useUploads()
   const { toast, confirm } = useToast()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [queue, setQueue] = useState([])
   const [running, setRunning] = useState(false)
   const [previewPhoto, setPreviewPhoto] = useState(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingPhoto, setEditingPhoto] = useState(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
   const fileInputRef = useRef(null)
   const gridRef = useRef(null)
 
@@ -261,17 +265,36 @@ export default function AdminPhotosPage() {
         <>
           <div ref={gridRef} className={`columns-2 md:columns-3 lg:columns-5 gap-3 transition-opacity duration-200 ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {photos?.map((p) => (
-              <Card key={p.id} className="photo-card surface-card overflow-hidden group cursor-pointer gap-0 py-0 mb-3 break-inside-avoid" onDoubleClick={() => setPreviewPhoto(p)}>
-                <div className="relative" style={p.width && p.height ? { aspectRatio: `${p.width}/${p.height}` } : {}}>
+              <Card key={p.id} className="photo-card surface-card overflow-hidden group cursor-pointer gap-0 py-0 mb-3 break-inside-avoid">
+                <div className="relative" style={p.width && p.height ? { aspectRatio: `${p.width}/${p.height}` } : {}} onDoubleClick={() => setPreviewPhoto(p)}>
                   {p.url ? <img src={getFileUrl(p.url)} alt={p.title || ''} className="w-full h-full object-cover" style={p.width && p.height ? {} : { aspectRatio: '1/1' }} /> : <div className="aspect-square w-full bg-accent flex items-center justify-center"><Image size={20} className="text-muted-foreground/30" /></div>}
-                  <button
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }}
-                  >
-                    <X size={12} className="text-white" />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button
+                      className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center hover:bg-primary/80 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setEditingPhoto(p); setEditTitle(p.title || ''); setEditDialogOpen(true) }}
+                    >
+                      <Edit size={11} className="text-white" />
+                    </button>
+                    <button
+                      className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center hover:bg-destructive transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }}
+                    >
+                      <X size={12} className="text-white" />
+                    </button>
+                  </div>
                 </div>
-                {p.title && <CardContent className="p-2.5"><p className="text-[10px] text-muted-foreground truncate">{p.title}</p></CardContent>}
+                {p.title ? (
+                  <CardContent className="p-2.5 cursor-pointer" onClick={() => { setEditingPhoto(p); setEditTitle(p.title || ''); setEditDialogOpen(true) }}>
+                    <p className="text-[10px] text-muted-foreground truncate hover:text-primary transition-colors">{p.title}</p>
+                  </CardContent>
+                ) : (
+                  <CardContent className="p-2.5">
+                    <button
+                      className="text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+                      onClick={() => { setEditingPhoto(p); setEditTitle(''); setEditDialogOpen(true) }}
+                    >添加标题</button>
+                  </CardContent>
+                )}
               </Card>
             ))}
           </div>
@@ -457,6 +480,50 @@ export default function AdminPhotosPage() {
                 </>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit title dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="text-sm font-medium">编辑照片标题</DialogTitle></DialogHeader>
+          <div className="space-y-3 mt-2">
+            {editingPhoto?.url && (
+              <img src={getFileUrl(editingPhoto.url)} alt="" className="w-full h-32 object-cover rounded-lg" />
+            )}
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="照片标题"
+              className="bg-background border-border"
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  setSavingTitle(true)
+                  try {
+                    await updatePhoto(editingPhoto.id, { title: editTitle })
+                    setPhotos(prev => prev.map(p => p.id === editingPhoto.id ? { ...p, title: editTitle } : p))
+                    setEditDialogOpen(false)
+                  } catch { toast('保存失败', 'error') }
+                  finally { setSavingTitle(false) }
+                }
+              }}
+            />
+            <Button
+              className="w-full"
+              disabled={savingTitle}
+              onClick={async () => {
+                setSavingTitle(true)
+                try {
+                  await updatePhoto(editingPhoto.id, { title: editTitle })
+                  setPhotos(prev => prev.map(p => p.id === editingPhoto.id ? { ...p, title: editTitle } : p))
+                  setEditDialogOpen(false)
+                } catch { toast('保存失败', 'error') }
+                finally { setSavingTitle(false) }
+              }}
+            >
+              {savingTitle ? <Loader2 size={14} className="animate-spin mr-2" /> : null}保存
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

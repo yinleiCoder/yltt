@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
-import { createOSSClient, getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, MAX_FILE_SIZE } from '@/lib/oss'
+import { createOSSClient, getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES, MAX_FILE_SIZE } from '@/lib/oss'
 import { v4 as uuidv4 } from 'uuid'
 
 export const dynamic = 'force-dynamic'
@@ -28,8 +28,9 @@ export async function POST(request) {
 
     const isImage = ALLOWED_IMAGE_TYPES.includes(type)
     const isVideo = ALLOWED_VIDEO_TYPES.includes(type)
+    const isAudio = ALLOWED_AUDIO_TYPES.includes(type)
 
-    if (!isImage && !isVideo) {
+    if (!isImage && !isVideo && !isAudio) {
       return NextResponse.json({ error: `不支持的文件格式: ${type}` }, { status: 400 })
     }
 
@@ -37,7 +38,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'OSS未配置' }, { status: 500 })
     }
 
-    const ext = (name || 'file').split('.').pop() || (isVideo ? 'mp4' : 'jpg')
+    const ext = (name || 'file').split('.').pop() || (isVideo ? 'mp4' : isAudio ? 'mp3' : 'jpg')
     const objectKey = `${folder || 'uploads'}/${uuidv4()}.${ext}`
 
     const oss = createOSSClient()

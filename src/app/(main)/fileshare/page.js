@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Search, Download, File, Loader2, FolderSearch, Sparkles, FileText, Film, Music, Image, Key, ChevronDown, ChevronRight } from 'lucide-react'
 import { useDownloads } from '@/contexts/download-context'
 import { formatSize } from '@/lib/utils'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 const CACHE_KEY = 'fileshare_results'
 
@@ -46,7 +50,24 @@ export default function FilesharePage() {
   const [apiKey, setApiKey] = useState('')
   const [configOpen, setConfigOpen] = useState(false)
   const inputRef = useRef(null)
+  const resultsRef = useRef(null)
+  const aiRef = useRef(null)
   const { addDownload } = useDownloads()
+
+  // Animate results on search complete
+  useGSAP(() => {
+    if (files && files.length > 0) {
+      gsap.set('.file-result', { y: 20, opacity: 0 })
+      gsap.to('.file-result', { y: 0, opacity: 1, duration: 0.35, stagger: 0.05, ease: 'power3.out' })
+    }
+  }, { scope: resultsRef, dependencies: [files] })
+
+  // Animate AI keyword reveal
+  useEffect(() => {
+    if (aiUsed && keywords && aiRef.current) {
+      gsap.fromTo(aiRef.current, { y: -8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' })
+    }
+  }, [aiUsed, keywords])
 
   // Load saved API key from localStorage
   useEffect(() => {
@@ -132,7 +153,7 @@ export default function FilesharePage() {
           </form>
 
           {aiUsed && keywords && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <div ref={aiRef} className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Sparkles size={12} className="text-primary" />
               <span>AI 解析关键词：</span>
               <span className="text-foreground font-medium">{keywords}</span>
@@ -197,9 +218,9 @@ export default function FilesharePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-2">
+            <div ref={resultsRef} className="space-y-2">
               {files.map((f) => (
-                <Card key={f.key} className="surface-card hover:bg-accent/30 transition-colors">
+                <Card key={f.key} className="file-result surface-card hover:bg-accent/30 transition-colors">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center shrink-0">
                       {fileIcon(f.name)}

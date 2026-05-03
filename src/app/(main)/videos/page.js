@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -8,7 +8,11 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Play, Video as VideoIcon, Download, Loader2 } from 'lucide-react'
 import { useDownloads } from '@/contexts/download-context'
 import { format } from 'date-fns'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
+
+gsap.registerPlugin(useGSAP)
 
 const PAGE_SIZE = 8
 
@@ -33,7 +37,15 @@ export default function VideosPage() {
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [pageLoading, setPageLoading] = useState(false)
+  const gridRef = useRef(null)
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+
+  // Stagger grid entrance on page change
+  useGSAP(() => {
+    if (!loaded || videos.length === 0) return
+    gsap.set('.video-card', { y: 24, opacity: 0 })
+    gsap.to('.video-card', { y: 0, opacity: 1, duration: 0.4, stagger: 0.06, ease: 'power3.out' })
+  }, { scope: gridRef, dependencies: [loaded, page] })
 
   // Get total count on mount
   useEffect(() => {
@@ -95,11 +107,11 @@ export default function VideosPage() {
         <div className="text-center py-20"><VideoIcon size={32} className="mx-auto text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">暂无视频</p></div>
       ) : (
         <>
-          <div className={`columns-1 md:columns-2 gap-4 space-y-4 *:break-inside-avoid transition-opacity duration-200 ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div ref={gridRef} className={`columns-1 md:columns-2 gap-4 space-y-4 *:break-inside-avoid ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {videos.map((v) => (
               <Card
                 key={v.id}
-                className="surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0 inline-block w-full"
+                className="video-card surface-card overflow-hidden hover:border-primary/20 transition-all duration-200 group cursor-pointer py-0 inline-block w-full"
                 onClick={() => v.url && setPreviewVideo(v)}
               >
                 <div className="relative bg-accent">

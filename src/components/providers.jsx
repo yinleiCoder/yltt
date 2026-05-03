@@ -7,6 +7,7 @@ import { DataProvider } from '@/contexts/data-context'
 import { DownloadProvider } from '@/contexts/download-context'
 import { UploadProvider } from '@/contexts/upload-context'
 import { VaultProvider } from '@/contexts/vault-context'
+import { MusicProvider } from '@/contexts/music-context'
 import { ToastProvider } from '@/components/ui/toast'
 
 export function Providers({ children, initialUser }) {
@@ -15,15 +16,17 @@ export function Providers({ children, initialUser }) {
       <TooltipProvider delayDuration={300}>
         <AuthProvider initialUser={initialUser}>
           <DataProvider>
-            <DownloadProvider>
-              <UploadProvider>
-                <ToastProvider>
-                  <VaultProvider>
-                    {children}
-                  </VaultProvider>
-                </ToastProvider>
-              </UploadProvider>
-            </DownloadProvider>
+            <MusicProvider>
+              <DownloadProvider>
+                <UploadProvider>
+                  <ToastProvider>
+                    <VaultProvider>
+                      {children}
+                    </VaultProvider>
+                  </ToastProvider>
+                </UploadProvider>
+              </DownloadProvider>
+            </MusicProvider>
           </DataProvider>
         </AuthProvider>
       </TooltipProvider>

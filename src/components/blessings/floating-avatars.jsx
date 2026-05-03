@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { Trash2, MapPin, Monitor } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '@/contexts/auth-context'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { getFileUrl } from '@/lib/oss-client'
 
 const AVATAR_SIZE = 44
 const MIN_DIST = 56
@@ -23,6 +25,18 @@ function hashCode(str) {
 function seededRandom(seed) {
   const x = Math.sin(seed) * 10000
   return x - Math.floor(x)
+}
+
+const AVATAR_COLORS = ['#3ecf8e', '#6366f1', '#f43f5e', '#f59e0b', '#8b5cf6', '#06b6d4', '#10b981', '#ef4444']
+function getAvatarBg(id) {
+  return AVATAR_COLORS[hashCode(String(id)) % AVATAR_COLORS.length]
+}
+
+function getInitials(name) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name[0].toUpperCase()
 }
 
 function dist(a, b) {
@@ -163,7 +177,6 @@ export default function FloatingAvatars({ blessings = [], onDelete }) {
   return (
     <div ref={containerRef} className="w-full flex-1 relative" style={{ minHeight: '400px' }}>
       {positioned.map((b) => {
-        const initial = (b.author_name || '匿')[0]
         const isExpanded = expandedId === b.id
         const riseDistance = containerSize.h - b._y + 180
 
@@ -191,18 +204,15 @@ export default function FloatingAvatars({ blessings = [], onDelete }) {
                 animationDelay: `${b._wobbleDelay}s`,
               }}
             >
-              <div
-                className="w-full h-full rounded-full flex items-center justify-center shadow-lg cursor-default"
-                style={{
-                  backgroundColor: '#3ecf8e',
-                  color: '#000',
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  boxShadow: '0 0 14px rgba(62,207,142,0.25)',
-                }}
-              >
-                {initial}
-              </div>
+              <Avatar className="w-full h-full rounded-full shadow-lg cursor-default" style={{ boxShadow: `0 0 14px ${getAvatarBg(b.id)}44` }}>
+                {b.author_profile?.avatar_url ? <AvatarImage src={getFileUrl(b.author_profile.avatar_url)} alt={b.author_name || ''} /> : null}
+                <AvatarFallback
+                  className="text-[16px] font-bold"
+                  style={{ backgroundColor: getAvatarBg(b.id), color: '#fff' }}
+                >
+                  {getInitials(b.author_name || b.author_profile?.display_name || '匿')}
+                </AvatarFallback>
+              </Avatar>
             </div>
           </div>
         )
@@ -210,8 +220,7 @@ export default function FloatingAvatars({ blessings = [], onDelete }) {
 
       {/* Portal card - rendered at document body level to avoid sidebar clipping */}
       {expandedItem && cardPos && (() => {
-        const displayName = expandedItem.author_name || '匿名'
-        const initial = displayName[0]
+        const displayName = expandedItem.author_name || expandedItem.author_profile?.display_name || '匿名'
         return createPortal(
           <div
             className="fixed w-64 surface-card rounded-xl p-4 shadow-2xl animate-fade-in-scale pointer-events-auto"
@@ -227,12 +236,15 @@ export default function FloatingAvatars({ blessings = [], onDelete }) {
             onMouseLeave={startHideTimer}
           >
             <div className="flex items-center gap-2 mb-2">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-black text-[10px] font-bold shrink-0"
-                style={{ backgroundColor: '#3ecf8e' }}
-              >
-                {initial}
-              </div>
+              <Avatar className="w-7 h-7 rounded-full shrink-0">
+                {expandedItem.author_profile?.avatar_url ? <AvatarImage src={getFileUrl(expandedItem.author_profile.avatar_url)} alt={displayName} /> : null}
+                <AvatarFallback
+                  className="text-[10px] font-bold"
+                  style={{ backgroundColor: getAvatarBg(expandedItem.id), color: '#fff' }}
+                >
+                  {getInitials(displayName)}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                 <p className="text-[10px] text-muted-foreground">

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
-import { createOSSClient, getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, MAX_FILE_SIZE } from '@/lib/oss'
+import { createOSSClient, getFileUrl, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES, MAX_FILE_SIZE } from '@/lib/oss'
 import { parseMultipart } from '@/lib/multipart'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -47,8 +47,9 @@ export async function POST(request) {
 
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
     const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type)
+    const isAudio = ALLOWED_AUDIO_TYPES.includes(file.type)
 
-    if (!isImage && !isVideo) {
+    if (!isImage && !isVideo && !isAudio) {
       return NextResponse.json({ error: `不支持的文件格式: ${file.type}` }, { status: 400 })
     }
 
@@ -56,7 +57,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'OSS未配置，请先配置阿里云OSS环境变量' }, { status: 500 })
     }
 
-    const ext = (file.name || 'file').split('.').pop() || (isVideo ? 'mp4' : 'jpg')
+    const ext = (file.name || 'file').split('.').pop() || (isVideo ? 'mp4' : isAudio ? 'mp3' : 'jpg')
     const objectKey = `${finalFolder}/${uuidv4()}.${ext}`
 
     const oss = createOSSClient()

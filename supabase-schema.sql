@@ -219,6 +219,34 @@ CREATE TRIGGER trg_videos_updated_at BEFORE UPDATE ON videos
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================================
+-- 音乐播放列表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS music (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(300) NOT NULL,
+  artist VARCHAR(300) DEFAULT '',
+  url TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE music ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "music_select" ON music FOR SELECT USING (true);
+CREATE POLICY "music_insert_admin" ON music FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "music_update_admin" ON music FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "music_delete_admin" ON music FOR DELETE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+CREATE INDEX IF NOT EXISTS idx_music_active ON music(active);
+CREATE INDEX IF NOT EXISTS idx_music_sort_order ON music(sort_order);
+
+-- ============================================================
 -- 密码保险箱 Vault
 -- ============================================================
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS vault_salt TEXT;

@@ -3,10 +3,10 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 
-const DataContext = createContext({})
+const DataContext = createContext(null)
 
 export function DataProvider({ children }) {
-  const { supabase } = useAuth()
+  const { supabase, ready: authReady } = useAuth()
   const [photos, setPhotos] = useState(null)
   const [videos, setVideos] = useState(null)
   const [stories, setStories] = useState(null)
@@ -27,6 +27,12 @@ export function DataProvider({ children }) {
     if (error) throw error
     setPhotos(prev => [data, ...(prev || [])])
     return data
+  }, [supabase])
+
+  const updatePhoto = useCallback(async (id, payload) => {
+    const { error } = await supabase.from('photos').update(payload).eq('id', id)
+    if (error) throw error
+    setPhotos(prev => (prev || []).map(p => p.id === id ? { ...p, ...payload } : p))
   }, [supabase])
 
   const deletePhoto = useCallback(async (id) => {
@@ -105,6 +111,16 @@ export function DataProvider({ children }) {
   const loadBlessings = useCallback(async () => {
     try {
       const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
+      if (data?.length) {
+        const userIds = [...new Set(data.map(b => b.user_id).filter(Boolean))]
+        if (userIds.length) {
+          const { data: profiles } = await supabase.from('profiles').select('id, avatar_url, display_name').in('id', userIds)
+          const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+          data.forEach(b => {
+            if (b.user_id) b.author_profile = profileMap.get(b.user_id) || null
+          })
+        }
+      }
       setBlessings(data || [])
     } catch {
       setBlessings([])
@@ -131,10 +147,10 @@ export function DataProvider({ children }) {
 
   const loadedRef = useRef(false)
   useEffect(() => {
-    if (loadedRef.current) return
+    if (!authReady || loadedRef.current) return
     loadedRef.current = true
     loadAll()
-  }, [loadAll])
+  }, [loadAll, authReady])
 
   const isLoaded = photos !== null && videos !== null && stories !== null && blessings !== null
 
@@ -142,7 +158,7 @@ export function DataProvider({ children }) {
     <DataContext.Provider value={{
       photos, videos, stories, blessings, isLoaded,
       loadPhotos, loadVideos, loadStories, loadBlessings, loadAll,
-      addPhoto, deletePhoto,
+      addPhoto, updatePhoto, deletePhoto,
       addVideo, updateVideo, deleteVideo,
       addStory, updateStory, deleteStory,
       addBlessing, deleteBlessing,

@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar"
 import { TransferManager } from "@/components/transfer-manager"
+import { MusicPlayer } from "@/components/music-player"
 
 export function Shell({ children }) {
   return (
@@ -11,6 +12,7 @@ export function Shell({ children }) {
         </div>
         <TransferManager />
       </main>
+      <MusicPlayer />
     </div>
   )
 }

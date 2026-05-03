@@ -9,6 +9,7 @@ export function AuthProvider({ children, initialUser }) {
   const [user, setUser] = useState(initialUser || null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(!initialUser)
+  const [ready, setReady] = useState(false)
   const supabaseRef = useRef(null)
   if (!supabaseRef.current) supabaseRef.current = createClient()
   const supabase = supabaseRef.current
@@ -32,6 +33,7 @@ export function AuthProvider({ children, initialUser }) {
           setProfile(null)
         }
         setLoading(false)
+        setReady(true)
       }
     )
 
@@ -58,7 +60,7 @@ export function AuthProvider({ children, initialUser }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, isAdmin, refreshProfile, signOut, supabase }}
+      value={{ user, profile, loading, ready, isAdmin, refreshProfile, signOut, supabase }}
     >
       {children}
     </AuthContext.Provider>

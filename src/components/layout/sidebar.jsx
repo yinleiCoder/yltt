@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Home, Heart, Camera, Video, BookOpen,
   LogOut, User, PanelLeftClose, PanelLeft,
-  Info, Code2, FolderSearch, Key,
+  Info, Code2, FolderSearch, Key, Music,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -53,6 +53,7 @@ const adminLinks = [
   { href: '/admin/stories', icon: BookOpen, label: '故事管理' },
   { href: '/admin/photos', icon: Camera, label: '相册管理' },
   { href: '/admin/videos', icon: Video, label: '视频管理' },
+  { href: '/admin/music', icon: Music, label: '音乐管理' },
   { href: '/admin/oshare', icon: FolderSearch, label: '文件共享管理' },
 ]
 
@@ -68,6 +69,7 @@ export function Sidebar() {
 
   return (
     <aside
+      id="app-sidebar"
       className={cn(
         'sticky top-0 z-40 h-screen flex-shrink-0 flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300',
         'border-r border-sidebar-border',
@@ -229,7 +231,7 @@ export function Sidebar() {
           <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
             <Link href="/profile" className="shrink-0">
               <Avatar className="w-8 h-8 ring-1 ring-sidebar-border">
-                <AvatarImage src={profile?.avatar_url || ''} />
+{profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}
                 <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground text-xs">
                   {profile?.display_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
