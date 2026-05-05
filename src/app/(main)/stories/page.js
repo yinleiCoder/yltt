@@ -71,6 +71,7 @@ export default function StoriesPage() {
             ))}
           </div>
         ) : (
+        <>
         <div ref={circlesRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
           {display.map((s, i) => (
             <button
@@ -101,6 +102,7 @@ export default function StoriesPage() {
             还没有故事，去后台发布第一篇吧
           </p>
         )}
+        </>
         )}
       </div>
 
