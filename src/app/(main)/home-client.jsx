@@ -4,11 +4,12 @@ import { useRef, useEffect } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowRight, BookOpen, Camera, Heart, Video } from 'lucide-react'
 
-gsap.registerPlugin(ScrollTrigger)
+gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 function CountUp({ target }) {
   const ref = useRef(null)
@@ -38,15 +39,12 @@ function CountUp({ target }) {
 function HeroSection({ stats }) {
   const ref = useRef(null)
 
-  useEffect(() => {
-    const items = ref.current?.querySelectorAll('.hero-item')
-    if (!items?.length) return
-
-    gsap.set(items, { y: 40, opacity: 0 })
-    gsap.to(items, {
-      y: 0, opacity: 1, duration: 0.9, stagger: 0.2, ease: 'power3.out',
-    })
-  }, [])
+  useGSAP(() => {
+    gsap.fromTo('.hero-item',
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.9, stagger: 0.2, ease: 'power3.out' }
+    )
+  }, { scope: ref })
 
   return (
     <section ref={ref} className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-4 -mt-8">
@@ -106,20 +104,15 @@ function HeroSection({ stats }) {
 function FeatureCards() {
   const ref = useRef(null)
 
-  useEffect(() => {
-    const items = ref.current?.querySelectorAll('.feat-card')
-    if (!items?.length) return
-
-    gsap.set(items, { y: 30, opacity: 0 })
-    const st = ScrollTrigger.create({
-      trigger: ref.current,
-      start: 'top 75%',
-      onEnter: () => {
-        gsap.to(items, { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power3.out' })
-      },
-    })
-    return () => st.kill()
-  }, [])
+  useGSAP(() => {
+    gsap.fromTo('.feat-card',
+      { y: 30, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power3.out',
+        scrollTrigger: { trigger: ref.current, start: 'top 75%' },
+      }
+    )
+  }, { scope: ref })
 
   const items = [
     { icon: BookOpen, title: '故事', desc: '从初次相遇到每一个纪念日，我们的故事在这里一一展开。', href: '/stories', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -158,20 +151,15 @@ function FeatureCards() {
 function StoryPreview({ stories }) {
   const ref = useRef(null)
 
-  useEffect(() => {
-    const items = ref.current?.querySelectorAll('.story-preview-card')
-    if (!items?.length) return
-
-    gsap.set(items, { y: 30, opacity: 0 })
-    const st = ScrollTrigger.create({
-      trigger: ref.current,
-      start: 'top 75%',
-      onEnter: () => {
-        gsap.to(items, { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power3.out' })
-      },
-    })
-    return () => st.kill()
-  }, [stories])
+  useGSAP(() => {
+    gsap.fromTo('.story-preview-card',
+      { y: 30, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power3.out',
+        scrollTrigger: { trigger: ref.current, start: 'top 75%' },
+      }
+    )
+  }, { scope: ref, dependencies: [stories] })
 
   if (!stories.length) {
     return (

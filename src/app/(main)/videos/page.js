@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from '@/components/ui/pagination'
-import { Play, Video as VideoIcon, Download, Loader2 } from 'lucide-react'
+import { Play, Video as VideoIcon, Download } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useDownloads } from '@/contexts/download-context'
 import { format } from 'date-fns'
 import gsap from 'gsap'
@@ -102,7 +103,18 @@ export default function VideosPage() {
       </div>
 
       {!loaded ? (
-        <div className="text-center py-20"><Loader2 size={24} className="mx-auto text-primary animate-spin" /></div>
+        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="surface-card overflow-hidden mb-4 break-inside-avoid">
+              <Skeleton className="w-full aspect-video" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : videos.length === 0 ? (
         <div className="text-center py-20"><VideoIcon size={32} className="mx-auto text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">暂无视频</p></div>
       ) : (

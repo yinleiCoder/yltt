@@ -8,6 +8,7 @@ import { useGSAP } from '@gsap/react'
 gsap.registerPlugin(useGSAP)
 import { useData } from '@/contexts/data-context'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { StoryViewer } from '@/components/story-viewer'
 import { ArrowRight, Play } from 'lucide-react'
@@ -60,6 +61,16 @@ export default function StoriesPage() {
             </span>
           )}
         </div>
+        {!isLoaded ? (
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex-shrink-0 flex flex-col items-center gap-1.5">
+                <Skeleton className="w-[72px] h-[72px] rounded-full" />
+                <Skeleton className="h-2.5 w-12" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div ref={circlesRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
           {display.map((s, i) => (
             <button
@@ -90,6 +101,7 @@ export default function StoriesPage() {
             还没有故事，去后台发布第一篇吧
           </p>
         )}
+        )}
       </div>
 
       {/* Timeline */}
@@ -97,7 +109,20 @@ export default function StoriesPage() {
         <h3 className="text-sm font-semibold text-foreground/60 mb-4 uppercase tracking-wider">
           所有故事
         </h3>
-        {display.length === 0 && isLoaded ? (
+        {!isLoaded ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="surface-card p-4 flex items-center gap-4">
+                <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-2.5 w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : display.length === 0 && isLoaded ? (
           <p className="text-sm text-muted-foreground text-center py-12">还没有故事</p>
         ) : (
           <div className="space-y-3">

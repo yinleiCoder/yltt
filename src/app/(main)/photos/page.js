@@ -7,7 +7,8 @@ gsap.registerPlugin(useGSAP)
 import { useData } from '@/contexts/data-context'
 import { getFileUrl } from '@/lib/oss-client'
 import { format } from 'date-fns'
-import { Camera, Calendar, Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Camera, Calendar, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import { useDownloads } from '@/contexts/download-context'
 
@@ -238,7 +239,35 @@ export default function PhotosPage() {
   }, [goNext, goPrev])
 
   if (!isLoaded) {
-    return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
+    return (
+      <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
+        <div className="order-3 lg:order-1 lg:w-60 shrink-0 px-6 py-4 lg:py-0 lg:relative">
+          <div className="lg:absolute lg:bottom-8 lg:left-6 lg:right-6 space-y-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-3 w-2/3" />
+            <div className="flex gap-1.5 mt-3">
+              <Skeleton className="h-5 w-12 rounded" />
+              <Skeleton className="h-5 w-16 rounded" />
+              <Skeleton className="h-5 w-10 rounded" />
+            </div>
+          </div>
+        </div>
+        <div className="order-1 lg:order-2 flex-1 flex items-center justify-center">
+          <Skeleton className="w-3/4 h-[60vh] rounded-xl" />
+        </div>
+        <div className="hidden lg:block w-28 shrink-0 px-2 space-y-3 py-[42vh]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="w-full aspect-4/3 rounded-md" />
+          ))}
+        </div>
+        <div className="lg:hidden flex gap-2 overflow-x-auto px-4 py-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="shrink-0 w-14 h-10 rounded-md" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!photos?.length) {

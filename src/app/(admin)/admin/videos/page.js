@@ -19,6 +19,7 @@ import { format } from 'date-fns'
 import { getOssKey } from '@/lib/oss-client'
 import { useUploads } from '@/contexts/upload-context'
 import { useToast } from '@/components/ui/toast'
+import { Skeleton } from '@/components/ui/skeleton'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
 
 const PAGE_SIZE = 10
@@ -202,7 +203,22 @@ export default function AdminVideosPage() {
       </div>
 
       {!loaded ? (
-        <div className="text-center py-20"><Loader2 size={20} className="mx-auto text-primary animate-spin" /></div>
+        <Card className="surface-card"><CardContent className="p-0"><div className="divide-y divide-border">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-3">
+              <Skeleton className="w-24 h-14 rounded shrink-0" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-2.5 w-full" />
+                <Skeleton className="h-2 w-1/4" />
+              </div>
+              <div className="flex gap-1">
+                <Skeleton className="w-7 h-7 rounded" />
+                <Skeleton className="w-7 h-7 rounded" />
+              </div>
+            </div>
+          ))}
+        </div></CardContent></Card>
       ) : videos.length === 0 ? (
         <Card className="surface-card"><CardContent className="text-center py-12 text-xs text-muted-foreground">还没有视频</CardContent></Card>
       ) : (

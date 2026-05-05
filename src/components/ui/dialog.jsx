@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRef, useLayoutEffect, useCallback, createContext, useContext } from "react"
+import { useRef, useLayoutEffect, useCallback, createContext, useContext, useState } from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import gsap from "gsap"
 
@@ -12,21 +12,35 @@ import { XIcon } from "lucide-react"
 const DialogCloseContext = createContext(null)
 
 function Dialog({
+  open: controlledOpen,
   onOpenChange,
+  defaultOpen,
   ...props
 }) {
   const popupRef = useRef(null)
   const overlayRef = useRef(null)
   const onCloseRef = useRef(onOpenChange)
   onCloseRef.current = onOpenChange
+  const closingRef = useRef(false)
+
+  // Internal open state that stays true during close animation
+  const [internalOpen, setInternalOpen] = useState(controlledOpen ?? defaultOpen ?? false)
 
   const animateClose = useCallback(() => {
+    if (closingRef.current) return
+    closingRef.current = true
     if (!popupRef.current && !overlayRef.current) {
+      setInternalOpen(false)
       onCloseRef.current?.(false)
+      closingRef.current = false
       return
     }
     const tl = gsap.timeline({
-      onComplete: () => onCloseRef.current?.(false),
+      onComplete: () => {
+        setInternalOpen(false)
+        onCloseRef.current?.(false)
+        closingRef.current = false
+      },
     })
     if (popupRef.current) {
       tl.to(popupRef.current, { opacity: 0, scale: 0.92, y: 16, duration: 0.2, ease: 'power2.in' }, 0)
@@ -36,10 +50,24 @@ function Dialog({
     }
   }, [])
 
+  // Sync controlled open → internal open
+  React.useEffect(() => {
+    if (controlledOpen !== undefined) {
+      if (controlledOpen) {
+        closingRef.current = false
+        setInternalOpen(true)
+      } else if (internalOpen && !closingRef.current) {
+        // Programmatic close: animate then update internal state
+        animateClose()
+      }
+    }
+  }, [controlledOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleOpenChange = useCallback((open) => {
     if (!open) {
       animateClose()
     } else {
+      closingRef.current = false
       onCloseRef.current?.(true)
     }
   }, [animateClose])
@@ -48,6 +76,7 @@ function Dialog({
     <DialogCloseContext.Provider value={{ popupRef, overlayRef, animateClose }}>
       <DialogPrimitive.Root
         data-slot="dialog"
+        open={internalOpen}
         onOpenChange={handleOpenChange}
         {...props}
       />

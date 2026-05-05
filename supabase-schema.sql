@@ -128,6 +128,9 @@ CREATE POLICY "photos_select" ON photos FOR SELECT USING (true);
 CREATE POLICY "photos_insert_admin" ON photos FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+CREATE POLICY "photos_update_admin" ON photos FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 CREATE POLICY "photos_delete_admin" ON photos FOR DELETE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
