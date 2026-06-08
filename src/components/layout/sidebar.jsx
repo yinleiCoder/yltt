@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Home, Heart, Camera, Video, BookOpen,
   LogOut, User, PanelLeftClose, PanelLeft,
-  Info, Code2, FolderSearch, Key, Music,
+  Info, Code2, FolderSearch, Music,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +43,6 @@ const userLinks = [
 const exploreLinks = [
   { href: '/opensource', icon: Code2, label: '开源软件' },
   { href: '/fileshare', icon: FolderSearch, label: '文件共享空间' },
-  { href: '/passwords', icon: Key, label: '密码管理' },
   { href: '/about', icon: Info, label: '关于网站' },
 ]
 

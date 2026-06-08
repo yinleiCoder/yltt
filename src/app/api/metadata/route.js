@@ -5,30 +5,36 @@ export const dynamic = 'force-dynamic'
 
 async function geoLookup(ip) {
   const services = [
-    // ip.sb — free, HTTPS, no key
+    // ip.sb — free, HTTPS
     async () => {
+      const controller = new AbortController()
+      setTimeout(() => controller.abort(), 3000)
       const res = await fetch(`https://api.ip.sb/geoip/${ip}`, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(3000),
+        signal: controller.signal,
       })
       if (!res.ok) throw new Error()
       const d = await res.json()
       return [d.country, d.region, d.city].filter(Boolean).join(' ')
     },
-    // ipapi.co — free, HTTPS, 1000 req/day
+    // ipapi.co — free, HTTPS
     async () => {
+      const controller = new AbortController()
+      setTimeout(() => controller.abort(), 3000)
       const res = await fetch(`https://ipapi.co/${ip}/json/`, {
-        signal: AbortSignal.timeout(3000),
+        signal: controller.signal,
       })
       if (!res.ok) throw new Error()
       const d = await res.json()
       if (d.error) throw new Error()
       return [d.country_name, d.region, d.city].filter(Boolean).join(' ')
     },
-    // ip-api.com — HTTP fallback
+    // ip-api.com — HTTPS (was HTTP, now fixed)
     async () => {
-      const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city`, {
-        signal: AbortSignal.timeout(3000),
+      const controller = new AbortController()
+      setTimeout(() => controller.abort(), 3000)
+      const res = await fetch(`https://ip-api.com/json/${ip}?fields=country,regionName,city`, {
+        signal: controller.signal,
       })
       if (!res.ok) throw new Error()
       const d = await res.json()
@@ -37,21 +43,17 @@ async function geoLookup(ip) {
   ]
 
   for (const fn of services) {
-    try {
-      const result = await fn()
-      if (result) return result
-    } catch { /* try next */ }
+    try { const r = await fn(); if (r) return r } catch { /* try next */ }
   }
   return ''
 }
 
 export async function GET(request) {
-  // Extract IP
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
-  const ip = forwarded?.split(',')[0]?.trim() || realIp || 'unknown'
+  const cfIp = request.headers.get('cf-connecting-ip') // Cloudflare
+  const ip = forwarded?.split(',')[0]?.trim() || realIp || cfIp || 'unknown'
 
-  // Parse device info
   const ua = request.headers.get('user-agent') || ''
   const parser = new UAParser(ua)
   const browser = parser.getBrowser()
@@ -62,14 +64,15 @@ export async function GET(request) {
   if (device.type === 'mobile') deviceType = 'Mobile'
   else if (device.type === 'tablet') deviceType = 'Tablet'
 
-  const deviceInfo = [
-    deviceType,
-    os.name || '',
-    browser.name || '',
-  ].filter(Boolean).join(' / ') || 'Unknown'
+  const deviceInfo = [deviceType, os.name || '', browser.name || '']
+    .filter(Boolean).join(' / ') || 'Unknown'
 
-  // Geolocation (skip private/localhost IPs)
-  const isPrivate = !ip || ip === 'unknown' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.') || ip === '::1' || ip.startsWith('172.')
+  // Correct private IP detection: 172.16.0.0/12 only
+  const isPrivate = !ip || ip === 'unknown'
+    || ip.startsWith('127.') || ip.startsWith('192.168.')
+    || ip.startsWith('10.') || ip === '::1'
+    || /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
+
   const location = isPrivate ? '' : await geoLookup(ip)
 
   return NextResponse.json({ ip, ip_location: location, device_info: deviceInfo })

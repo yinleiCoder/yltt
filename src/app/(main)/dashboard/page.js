@@ -45,7 +45,7 @@ function QuickNav({ counts }) {
     <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
       {items.map((item, i) => (
         <Link key={i} href={item.href}>
-          <Card className="nav-card surface-card hover:border-primary/20 transition-all duration-200 group cursor-pointer h-full">
+          <Card className="nav-card surface-card hover:border-primary/20 transition-[box-shadow,transform] duration-150 group cursor-pointer h-full">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <item.icon size={20} className="text-primary" />
@@ -80,7 +80,7 @@ function RecentActivity({ stories }) {
       <div className="grid sm:grid-cols-2 gap-4">
         {stories.map((item) => (
           <Link key={item.id} href={`/stories/${item.id}`}>
-            <Card className="activity-item surface-card hover:border-primary/20 transition-all duration-200">
+            <Card className="activity-item surface-card hover:border-primary/20 transition-[box-shadow,transform] duration-150">
               <CardContent className="p-5">
                 <p className="text-[10px] text-primary font-medium uppercase tracking-widest mb-2">{item.date}</p>
                 <h4 className="font-semibold text-sm text-foreground mb-1">{item.title}</h4>

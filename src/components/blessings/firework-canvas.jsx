@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react'
 
-const COLORS = ['#3ecf8e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
+const COLORS = ['#ff6b4a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 const GRAVITY = 0.04
 const MAX_PARTICLES = 500
 const MAX_ROCKETS = 5
@@ -148,7 +148,7 @@ export default function FireworkCanvas() {
       rafRef.current = requestAnimationFrame(loop)
 
       // Semi-transparent clear for tail effect
-      ctx.fillStyle = 'rgba(6, 8, 8, 0.25)'
+      ctx.fillStyle = 'rgba(248, 246, 246, 0.25)'
       ctx.fillRect(0, 0, w(), h())
 
       // Launch new rocket

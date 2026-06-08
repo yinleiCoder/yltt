@@ -45,7 +45,7 @@ function ImageGallery({ images, name }) {
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
-              className={`w-10 h-10 rounded-md overflow-hidden border-2 shrink-0 transition-all ${
+              className={`w-10 h-10 rounded-md overflow-hidden border-2 shrink-0 transition-[box-shadow,transform,border-color] ${
                 i === activeIdx
                   ? 'border-primary ring-1 ring-primary/20'
                   : 'border-transparent opacity-50 hover:opacity-80'

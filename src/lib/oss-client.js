@@ -1,4 +1,5 @@
-const CDN_DOMAIN = process.env.NEXT_PUBLIC_OSS_CDN_DOMAIN || 'https://yltt.oss-cn-hangzhou.aliyuncs.com'
+const CDN_DOMAIN = process.env.NEXT_PUBLIC_OSS_CDN_DOMAIN
+  || 'https://yltt.oss-cn-hangzhou.aliyuncs.com'
 
 export function getFileUrl(objectKey) {
   if (!objectKey) return '/placeholder.svg'
@@ -11,7 +12,7 @@ export function getOssKey(urlOrKey) {
   if (!urlOrKey.startsWith('http')) return urlOrKey
   try {
     const u = new URL(urlOrKey)
-    return u.pathname.slice(1) // remove leading /
+    return u.pathname.slice(1)
   } catch { return null }
 }
 

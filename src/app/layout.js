@@ -15,12 +15,12 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <SmoothScroll>
-          <Providers initialUser={user}>
+      <body className="min-h-dvh bg-background text-foreground antialiased">
+        <Providers initialUser={user}>
+          <SmoothScroll>
             {children}
-          </Providers>
-        </SmoothScroll>
+          </SmoothScroll>
+        </Providers>
       </body>
     </html>
   )

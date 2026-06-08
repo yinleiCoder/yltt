@@ -26,7 +26,7 @@ function generateWaveform(seed, count = 80) {
   return bars
 }
 
-function WaveformCanvas({ waveform, progress, color = '#3ecf8e', playedColor = '#0ea163', height = 48 }) {
+function WaveformCanvas({ waveform, progress, color = '#ff6b4a', playedColor = '#e85d3a', height = 48 }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -320,8 +320,8 @@ export function MusicPlayer() {
                 <WaveformCanvas
                   waveform={waveform}
                   progress={progress}
-                  color="rgba(62,207,142,0.35)"
-                  playedColor="#3ecf8e"
+                  color="rgba(255,107,74,0.35)"
+                  playedColor="#ff6b4a"
                   height={showFull ? 40 : 32}
                 />
               </div>
