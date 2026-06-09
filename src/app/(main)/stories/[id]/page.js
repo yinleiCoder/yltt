@@ -28,6 +28,7 @@ export default function StoryDetailPage() {
   const [comments, setComments] = useState([])
   const [commentContent, setCommentContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [commentError, setCommentError] = useState('')
   const pageRef = useRef(null)
 
   const story = allStories?.find(s => s.id === id) || null
@@ -47,8 +48,41 @@ export default function StoryDetailPage() {
     e.preventDefault()
     if (!commentContent.trim() || !user) return
     setSubmitting(true)
-    const { error } = await supabase.from('comments').insert({ story_id: id, user_id: user.id, content: commentContent.trim(), ip_address: meta?.ip || '', ip_location: meta?.ip_location || '', device_info: meta?.device_info || '' })
-    if (!error) { setCommentContent(''); await loadComments() }
+    setCommentError('')
+    try {
+      // Ensure fresh session before inserting
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setCommentError('登录已过期，请刷新页面后重新登录')
+        setSubmitting(false)
+        return
+      }
+      // Use session user id (guaranteed to match auth.uid() in RLS)
+      const authUserId = session.user.id
+      const payload = { story_id: id, user_id: authUserId, content: commentContent.trim() }
+      if (meta?.ip) payload.ip_address = meta.ip
+      if (meta?.ip_location) payload.ip_location = meta.ip_location
+      if (meta?.device_info) payload.device_info = meta.device_info
+      const { error } = await supabase.from('comments').insert(payload)
+      if (error) {
+        console.error('Comment insert error:', JSON.stringify(error))
+        // Retry without extra fields
+        const { error: retryError } = await supabase.from('comments').insert({ story_id: id, user_id: authUserId, content: commentContent.trim() })
+        if (retryError) {
+          console.error('Comment insert retry error:', JSON.stringify(retryError))
+          setCommentError(retryError.message || '评论失败，请稍后重试')
+        } else {
+          setCommentContent('')
+          await loadComments()
+        }
+      } else {
+        setCommentContent('')
+        await loadComments()
+      }
+    } catch (err) {
+      console.error('Comment insert exception:', err)
+      setCommentError('评论失败，请检查网络连接')
+    }
     setSubmitting(false)
   }
 
@@ -84,7 +118,9 @@ export default function StoryDetailPage() {
           {hasMedia && (
             <div className="mt-6">
               {story.media_type === 'video' ? (
-                <VideoPlayer src={`/api/stream?key=${encodeURIComponent(getOssKey(story.media_url))}`} />
+                <div className="w-full aspect-video max-h-[50vh] sm:max-h-[70vh]">
+                  <VideoPlayer src={`/api/stream?key=${encodeURIComponent(getOssKey(story.media_url))}`} />
+                </div>
               ) : (
                 <img src={mediaUrl} alt={story.title} className="w-full object-cover rounded-xl border-2 border-black" loading="lazy" />
               )}
@@ -97,10 +133,15 @@ export default function StoryDetailPage() {
         <CardContent className="p-6 sm:p-8">
           <h3 className="font-black text-base mb-5 flex items-center gap-2"><MessageCircle size={17} className="text-primary" aria-hidden="true" />评论 ({comments.length})</h3>
           {user ? (
-            <form onSubmit={handleComment} className="mb-6 flex gap-2.5">
-              <Avatar className="size-9 ring-1 ring-black/10 shrink-0">{profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}<AvatarFallback className="bg-stone-200 text-foreground text-xs font-bold">{profile?.display_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback></Avatar>
-              <div className="flex-1 flex gap-2"><Input placeholder="写下评论..." value={commentContent} onChange={(e) => setCommentContent(e.target.value)} className="bg-white border-2 border-black rounded-lg font-medium text-sm" /><Button type="submit" size="icon" className="bg-primary hover:bg-primary/90 text-white border-2 border-black chunky-shadow-sm size-9 shrink-0" disabled={submitting || !commentContent.trim()}>{submitting ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}</Button></div>
-            </form>
+            <>
+              <form onSubmit={handleComment} className="mb-6 flex gap-2.5">
+                <Avatar className="size-9 ring-1 ring-black/10 shrink-0">{profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}<AvatarFallback className="bg-stone-200 text-foreground text-xs font-bold">{profile?.display_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback></Avatar>
+                <div className="flex-1 flex gap-2"><Input placeholder="写下评论..." value={commentContent} onChange={(e) => setCommentContent(e.target.value)} className="bg-white border-2 border-black rounded-lg font-medium text-sm" /><Button type="submit" size="icon" className="bg-primary hover:bg-primary/90 text-white border-2 border-black chunky-shadow-sm size-9 shrink-0" disabled={submitting || !commentContent.trim()}>{submitting ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}</Button></div>
+              </form>
+              {commentError && (
+                <p className="mb-4 text-xs text-red-500 font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">{commentError}</p>
+              )}
+            </>
           ) : (
             <div className="mb-6 p-3 text-center rounded-xl bg-stone-100 border-2 border-black/10"><p className="text-xs text-muted-foreground font-medium"><Link href="/login" className="text-primary font-bold hover:underline">登录</Link> 后即可评论</p></div>
           )}

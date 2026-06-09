@@ -156,6 +156,9 @@ export function TransferManager() {
     return (order[a.status] ?? 5) - (order[b.status] ?? 5)
   })
 
+  // Hide completely when there are no transfers at all
+  if (allItems.length === 0) return null
+
   const filteredItems = tab === 'all' ? allItems : allItems.filter((i) => i._type === tab)
 
   return (

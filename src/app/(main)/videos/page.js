@@ -184,7 +184,7 @@ export default function VideosPage() {
 
           {/* Video player */}
           <div className="flex-1 flex items-center justify-center px-1 sm:px-4 min-h-0" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full max-w-5xl">
+            <div className="w-full max-w-5xl h-full max-h-full">
               <VideoPlayer
                 src={getStreamUrl(currentVideo.url)}
                 poster={getThumbUrl(currentVideo.url)}

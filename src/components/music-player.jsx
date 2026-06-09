@@ -83,6 +83,7 @@ export function MusicPlayer() {
   const [showFull, setShowFull] = useState(false)
   const [idle, setIdle] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useState(64)
+  const [isMobile, setIsMobile] = useState(false)
   const idleTimerRef = useRef(null)
   const pillRef = useRef(null)
   const barRef = useRef(null)
@@ -108,6 +109,14 @@ export function MusicPlayer() {
     clearIdleTimer()
     idleTimerRef.current = setTimeout(() => setIdle(true), IDLE_DELAY)
   }, [clearIdleTimer])
+
+  // Track mobile state for pill positioning
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Track sidebar width for pill positioning
   useEffect(() => {
@@ -190,7 +199,7 @@ export function MusicPlayer() {
       <div
         ref={pillRef}
         className="absolute bottom-6 pointer-events-auto"
-        style={{ left: sidebarWidth + 8, opacity: idle ? 1 : 0, pointerEvents: idle ? 'auto' : 'none' }}
+        style={{ left: isMobile ? undefined : sidebarWidth + 8, right: isMobile ? 24 : undefined, opacity: idle ? 1 : 0, pointerEvents: idle ? 'auto' : 'none' }}
       >
         <button
           onClick={() => { setIdle(false); startIdleTimer() }}
