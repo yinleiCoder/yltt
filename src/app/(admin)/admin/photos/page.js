@@ -40,28 +40,19 @@ import {
   Edit,
 } from "lucide-react";
 import { getFileUrl, getOssKey } from "@/lib/oss-client";
-import { formatSize } from "@/lib/utils";
+import { formatSize, generatePageNumbers } from "@/lib/utils";
+
+function getThumbUrl(url, width = 400) {
+  const full = getFileUrl(url)
+  if (!full || full === '/placeholder.svg') return full
+  const sep = full.includes('?') ? '&' : '?'
+  return `${full}${sep}x-oss-process=image/resize,w_${width}/quality,q_80`
+}
 import exifr from "exifr";
 import { useUploads } from "@/contexts/upload-context";
 import { useToast } from "@/components/ui/toast";
 
 const PAGE_SIZE = 20;
-
-function generatePageNumbers(current, total) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages = [1];
-  if (current > 3) pages.push("...");
-  for (
-    let i = Math.max(2, current - 1);
-    i <= Math.min(total - 1, current + 1);
-    i++
-  ) {
-    pages.push(i);
-  }
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-}
 
 let queueId = 0;
 
@@ -416,7 +407,7 @@ export default function AdminPhotosPage() {
                 >
                   {p.url ? (
                     <img
-                      src={getFileUrl(p.url)}
+                      src={getThumbUrl(p.url, 300)}
                       alt={p.title || ""}
                       className="w-full h-full object-cover"
                       style={p.width && p.height ? {} : { aspectRatio: "1/1" }}

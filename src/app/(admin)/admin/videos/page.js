@@ -4,7 +4,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
-gsap.registerPlugin(useGSAP)
 import { useAuth } from '@/contexts/auth-context'
 import { useData } from '@/contexts/data-context'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,25 +15,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from '@/components/ui/pagination'
 import { Edit, Plus, Trash2, Loader2, Upload, Video, X, Play, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
-import { getOssKey } from '@/lib/oss-client'
+import { getFileUrl, getOssKey } from '@/lib/oss-client'
+import { generatePageNumbers } from '@/lib/utils'
 import { useUploads } from '@/contexts/upload-context'
+
+function getThumbUrl(url, width = 600) {
+  if (!url) return ''
+  const full = getFileUrl(url)
+  const sep = full.includes('?') ? '&' : '?'
+  return `${full}${sep}x-oss-process=video/snapshot,t_2000,f_jpg,w_${width}`
+}
 import { useToast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MediaController, MediaControlBar, MediaPlayButton, MediaSeekBackwardButton, MediaSeekForwardButton, MediaTimeRange, MediaTimeDisplay, MediaDurationDisplay, MediaMuteButton, MediaVolumeRange, MediaCaptionsButton, MediaPlaybackRateButton, MediaPipButton, MediaFullscreenButton } from 'media-chrome/react'
 
 const PAGE_SIZE = 10
-
-function generatePageNumbers(current, total) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages = [1]
-  if (current > 3) pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2) pages.push('...')
-  pages.push(total)
-  return pages
-}
 
 export default function AdminVideosPage() {
   const { supabase } = useAuth()
@@ -234,10 +229,10 @@ export default function AdminVideosPage() {
                     >
                       {v.url ? (
                         <>
-                          <div className="w-full h-full bg-black/40 absolute inset-0 flex items-center justify-center">
+                          <div className="w-full h-full bg-black/40 absolute inset-0 flex items-center justify-center z-10">
                             <Play size={16} className="text-white/80 group-hover:scale-110 transition-transform" />
                           </div>
-                          <video src={v.url} className="w-full h-full object-cover" preload="metadata" />
+                          <img src={getThumbUrl(v.url, 300)} alt={v.title} className="w-full h-full object-cover" loading="lazy" />
                         </>
                       ) : (
                         <Play size={16} className="text-muted-foreground/30" />

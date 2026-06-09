@@ -310,7 +310,7 @@ export function MusicPlayer() {
 
               {/* Waveform (clickable seek bar) */}
               <div
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 cursor-pointer"
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect()
                   const pct = (e.clientX - rect.left) / rect.width

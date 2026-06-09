@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 const AuthContext = createContext(null)
@@ -19,16 +19,11 @@ export function AuthProvider({ children, initialUser }) {
       async (event, session) => {
         const currentUser = session?.user ?? null
         setUser(currentUser)
-
         if (currentUser) {
           try {
-            const { data } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', currentUser.id)
-              .single()
+            const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
             if (data) setProfile(data)
-          } catch { /* profile may not exist yet */ }
+          } catch {}
         } else {
           setProfile(null)
         }
@@ -36,35 +31,28 @@ export function AuthProvider({ children, initialUser }) {
         setReady(true)
       }
     )
-
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!user) return
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    setProfile(data)
-  }
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    if (data) setProfile(data)
+  }, [user, supabase])
 
   const isAdmin = profile?.role === 'admin'
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
-  }
+  }, [supabase])
 
-  return (
-    <AuthContext.Provider
-      value={{ user, profile, loading, ready, isAdmin, refreshProfile, signOut, supabase }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  const value = useMemo(() => ({
+    user, profile, loading, ready, isAdmin, refreshProfile, signOut, supabase,
+  }), [user, profile, loading, ready, isAdmin, refreshProfile, signOut, supabase])
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

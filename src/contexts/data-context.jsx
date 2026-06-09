@@ -1,25 +1,27 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 
 const DataContext = createContext(null)
 
 export function DataProvider({ children }) {
   const { supabase, ready: authReady } = useAuth()
+  const pathname = usePathname()
   const [photos, setPhotos] = useState(null)
   const [videos, setVideos] = useState(null)
   const [stories, setStories] = useState(null)
   const [blessings, setBlessings] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const loadedRef = useRef(false)
 
   // ── Photos ──────────────────────────────────────────
   const loadPhotos = useCallback(async () => {
-    try {
-      const { data } = await supabase.from('photos').select('*').order('created_at', { ascending: false })
-      setPhotos(data || [])
-    } catch {
-      setPhotos([])
-    }
+    const { data } = await supabase.from('photos').select('*').order('created_at', { ascending: false })
+    setPhotos(data || [])
+    return data || []
   }, [supabase])
 
   const addPhoto = useCallback(async (payload) => {
@@ -43,12 +45,9 @@ export function DataProvider({ children }) {
 
   // ── Videos ──────────────────────────────────────────
   const loadVideos = useCallback(async () => {
-    try {
-      const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
-      setVideos(data || [])
-    } catch {
-      setVideos([])
-    }
+    const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
+    setVideos(data || [])
+    return data || []
   }, [supabase])
 
   const addVideo = useCallback(async (payload) => {
@@ -72,12 +71,9 @@ export function DataProvider({ children }) {
 
   // ── Stories ─────────────────────────────────────────
   const loadStories = useCallback(async () => {
-    try {
-      const { data } = await supabase.from('stories').select('*').order('story_date', { ascending: true })
-      setStories(data || [])
-    } catch {
-      setStories([])
-    }
+    const { data } = await supabase.from('stories').select('*').order('story_date', { ascending: true })
+    setStories(data || [])
+    return data || []
   }, [supabase])
 
   const addStory = useCallback(async (payload) => {
@@ -109,22 +105,17 @@ export function DataProvider({ children }) {
 
   // ── Blessings ───────────────────────────────────────
   const loadBlessings = useCallback(async () => {
-    try {
-      const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
-      if (data?.length) {
-        const userIds = [...new Set(data.map(b => b.user_id).filter(Boolean))]
-        if (userIds.length) {
-          const { data: profiles } = await supabase.from('profiles').select('id, avatar_url, display_name').in('id', userIds)
-          const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
-          data.forEach(b => {
-            if (b.user_id) b.author_profile = profileMap.get(b.user_id) || null
-          })
-        }
+    const { data } = await supabase.from('blessings').select('*').order('created_at', { ascending: false })
+    if (data?.length) {
+      const userIds = [...new Set(data.map(b => b.user_id).filter(Boolean))]
+      if (userIds.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id, avatar_url, display_name').in('id', userIds)
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+        data.forEach(b => { if (b.user_id) b.author_profile = profileMap.get(b.user_id) || null })
       }
-      setBlessings(data || [])
-    } catch {
-      setBlessings([])
     }
+    setBlessings(data || [])
+    return data || []
   }, [supabase])
 
   const addBlessing = useCallback(async (payload) => {
@@ -140,29 +131,51 @@ export function DataProvider({ children }) {
     setBlessings(prev => (prev || []).filter(b => b.id !== id))
   }, [supabase])
 
-  // ── Boot ────────────────────────────────────────────
+  // ── Load all data ───────────────────────────────────
   const loadAll = useCallback(async () => {
-    await Promise.all([loadPhotos(), loadVideos(), loadStories(), loadBlessings()])
+    setLoading(true)
+    setError(null)
+    try {
+      await Promise.all([loadPhotos(), loadVideos(), loadStories(), loadBlessings()])
+    } catch (err) {
+      console.error('Failed to load data:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }, [loadPhotos, loadVideos, loadStories, loadBlessings])
 
-  const loadedRef = useRef(false)
+  /* ── Load when auth is ready or route changes ─── */
+  const prevPathRef = useRef(pathname)
   useEffect(() => {
-    if (!authReady || loadedRef.current) return
-    loadedRef.current = true
-    loadAll()
-  }, [loadAll, authReady])
+    if (!authReady) return
+    if (!loadedRef.current || pathname !== prevPathRef.current) {
+      loadedRef.current = true
+      prevPathRef.current = pathname
+      loadAll()
+    }
+  }, [authReady, pathname, loadAll])
 
   const isLoaded = photos !== null && videos !== null && stories !== null && blessings !== null
 
+  const value = useMemo(() => ({
+    photos, videos, stories, blessings, isLoaded, loading, error,
+    loadPhotos, loadVideos, loadStories, loadBlessings, loadAll,
+    addPhoto, updatePhoto, deletePhoto,
+    addVideo, updateVideo, deleteVideo,
+    addStory, updateStory, deleteStory,
+    addBlessing, deleteBlessing,
+  }), [
+    photos, videos, stories, blessings, isLoaded, loading, error,
+    loadPhotos, loadVideos, loadStories, loadBlessings, loadAll,
+    addPhoto, updatePhoto, deletePhoto,
+    addVideo, updateVideo, deleteVideo,
+    addStory, updateStory, deleteStory,
+    addBlessing, deleteBlessing,
+  ])
+
   return (
-    <DataContext.Provider value={{
-      photos, videos, stories, blessings, isLoaded,
-      loadPhotos, loadVideos, loadStories, loadBlessings, loadAll,
-      addPhoto, updatePhoto, deletePhoto,
-      addVideo, updateVideo, deleteVideo,
-      addStory, updateStory, deleteStory,
-      addBlessing, deleteBlessing,
-    }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   )

@@ -2,29 +2,29 @@
 
 # YLTT ("我的涛妹") — Project Reference
 
-Personal website for 尹磊 & 唐涛. Built with Next.js 16 + Supabase + AliOSS. Deployed at [yinleilei.cn](https://yinleilei.cn).
+Personal website for 尹磊 & 唐涛. Built with Next.js 16 + Supabase + AliOSS.
 
 ## Quick Start
 
 ```bash
 npm run dev      # http://localhost:3000
 npm run build    # Production build
-npm run lint     # ESLint
 ```
 
 ## Tech Stack
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| Framework | Next.js 16.2.4 (Turbopack) | App Router, `force-dynamic` on API routes |
+| Framework | Next.js 16.2.4 (Turbopack) | App Router |
 | DB + Auth | Supabase (Postgres) | RLS enabled, middleware auth guard |
-| Storage | AliCloud OSS | `ali-oss` SDK, presigned URLs |
-| Styling | Tailwind CSS v4 + shadcn/ui | @base-ui/react primitives, `tw-animate-css` |
-| Animation | GSAP + @gsap/react + Lenis | ScrollTrigger for scroll-linked, useGSAP hook |
+| Storage | AliCloud OSS | Transfer acceleration enabled (`oss-accelerate.aliyuncs.com`) |
+| Styling | Tailwind CSS v4 + shadcn/ui | @base-ui/react primitives |
+| Animation | GSAP + @gsap/react + Lenis | ScrollTrigger, useGSAP hook |
 | Icons | lucide-react | Standardized `size={N}` props |
-| Font | Inter (system fallback) | via `font-sans` CSS variable |
+| Font | Geist (system fallback) | via `font-sans` CSS variable |
 | Video | media-chrome/react | Web Component controls |
-| Crypto | Web Crypto API | PBKDF2 + AES-256-GCM for password vault |
+| PDF | @embedpdf/react-pdf-viewer | PDF preview in fileshare |
+| Drag | @dnd-kit/core + @dnd-kit/sortable | Music playlist reordering |
 
 ## Architecture
 
@@ -32,165 +32,152 @@ npm run lint     # ESLint
 src/
 ├── app/
 │   ├── layout.js            # Root: server auth → Providers → SmoothScroll
-│   ├── globals.css           # Tailwind v4, shadcn, dark theme tokens
-│   ├── error.tsx             # Global error boundary
-│   ├── not-found.tsx         # Custom 404
-│   ├── (main)/               # Public pages
-│   │   ├── layout.js         # Shell wrapper
-│   │   ├── loading.tsx       # Route-level loading skeleton
+│   ├── globals.css           # Tailwind v4 + warm Neo-Brutalist theme
+│   ├── error.jsx             # Global error boundary
+│   ├── not-found.jsx         # Custom 404 (chunky style)
+│   ├── (main)/
+│   │   ├── layout.js         # Shell wrapper (sidebar + mobile hamburger)
+│   │   ├── loading.jsx       # Route-level loading skeleton
 │   │   ├── page.js           # Server: 5 parallel Supabase queries → HomeClient
 │   │   ├── home-client.jsx   # Hero + FeatureCards + StoryPreview
-│   │   ├── about/            # Static info with ScrollTrigger reveals
-│   │   ├── blessings/        # Floating avatars + fireworks canvas
-│   │   ├── dashboard/        # User dashboard: welcome + quick nav + recent
-│   │   ├── fileshare/        # AI file search (DeepSeek)
-│   │   ├── opensource/       # Software gallery with image lightbox
-│   │   ├── photos/           # Photo viewer with thumbnail strip + EXIF
-│   │   ├── profile/          # Profile edit + avatar upload
-│   │   ├── stories/          # Story list + Instagram-style circles
-│   │   ├── stories/[id]/     # Story detail + comments
-│   │   └── videos/           # Video gallery with media-chrome preview
-│   ├── (admin)/              # Admin CRUD pages (Shell + TabNav)
-│   ├── (auth)/               # Login/Register with split-panel layout
-│   └── api/                  # Route handlers (OSS, upload, oshare, auth)
+│   │   ├── about/            # Static info with ScrollTrigger
+│   │   ├── blessings/        # Blessing wall (grid cards + fireworks canvas)
+│   │   ├── dashboard/        # User dashboard with quick nav
+│   │   ├── fileshare/        # Keyword file search + PDF preview
+│   │   ├── opensource/       # Software gallery
+│   │   ├── photos/           # Photo grid + fullscreen viewer + lazy load
+│   │   ├── profile/          # Profile editing
+│   │   ├── stories/          # Rose garden story display
+│   │   ├── stories/[id]/     # Story detail + comments + media
+│   │   └── videos/           # Video gallery + fullscreen viewer
+│   ├── (admin)/
+│   │   └── admin/
+│   │       ├── photos/       # Photo CRUD with thumbnail optimization
+│   │       ├── videos/       # Video CRUD with snapshot thumbnails
+│   │       ├── stories/      # Story editor
+│   │       ├── users/        # User management with refresh
+│   │       ├── music/        # Music playlist with drag-and-drop (dnd-kit)
+│   │       └── oshare/       # File share management
+│   ├── (auth)/               # Login/Register with girl logo
+│   └── api/
+│       ├── metadata/route.js # IP geolocation (Cloudflare + Vercel compatible)
+│       ├── stream/route.js   # Video stream proxy (OSS signed URLs)
+│       └── ...               # Upload, OSS delete, oshare search
 ├── components/
-│   ├── layout/               # Shell, Sidebar
-│   ├── blessings/            # FireworkCanvas, FloatingAvatars
-│   ├── music-player.jsx      # Fixed audio player with waveform
-│   ├── smooth-scroll.jsx     # Lenis + ScrollTrigger integration
-│   ├── providers.jsx         # Context provider tree (9 levels)
-│   ├── story-viewer.jsx      # Instagram-like story viewer
-│   └── ui/                   # shadcn/ui (base-ui primitives)
+│   ├── layout/               # Shell (mobile hamburger), Sidebar (GSAP collapse)
+│   ├── blessings/            # FireworkCanvas
+│   ├── video-player.jsx      # media-chrome video player
+│   ├── pdf-viewer.jsx        # @embedpdf/react-pdf-viewer wrapper
+│   ├── music-player.jsx      # Fixed audio player
+│   ├── smooth-scroll.jsx     # Lenis + ScrollTrigger
+│   ├── providers.jsx         # 8 contexts (vault removed)
+│   ├── story-viewer.jsx      # Instagram-style viewer (legacy)
+│   └── ui/                   # shadcn/ui
 ├── contexts/
-│   ├── auth-context.jsx      # Supabase auth + profile
-│   ├── data-context.jsx      # Central store: photos/videos/stories/blessings
-│   ├── music-context.jsx     # Persistent audio player state
-│   ├── download-context.jsx  # Chunked downloads with AbortController
-│   ├── upload-context.jsx    # Single + multipart uploads
-│   └── vault-context.jsx     # Encrypted password manager
-├── hooks/                    # (empty — hooks live in contexts)
+│   ├── auth-context.jsx      # useMemo value, useCallback signOut, maybeSingle
+│   ├── data-context.jsx      # Route-change auto reload, useMemo value
+│   ├── music-context.jsx     # playingRef for stable togglePlay
+│   ├── download-context.jsx  # Chunked downloads
+│   └── upload-context.jsx    # Single + multipart uploads
 └── lib/
     ├── constants.js          # Story categories
     ├── utils.js              # cn(), formatSize(), generatePageNumbers()
-    ├── crypto.js             # PBKDF2 + AES-256-GCM (Web Crypto)
-    ├── copy-to-clipboard.js  # Clipboard with auto-clear
-    ├── multipart.js          # Server multipart parser (Buffer)
-    ├── oss-client.js         # Client OSS utils (getFileUrl, getOssKey)
-    ├── oss.js                # Server ali-oss client factory
+    ├── multipart.js          # Server multipart parser
+    ├── oss-client.js         # Client OSS (getFileUrl, getOssKey, getThumbUrl)
+    ├── oss.js                # Server ali-oss (accelerate endpoint)
     ├── rbac.js               # Role/permission constants
-    ├── use-metadata.js       # Client IP/device hook (cached)
-    ├── opensource-data.js    # Static project data
+    ├── use-metadata.js       # Client IP/device hook
     └── supabase/
         ├── client.js         # Browser client
-        ├── middleware.js      # Auth guard + admin role check
-        └── server.js         # Server clients (standard + admin/service_role)
+        ├── middleware.js      # Auth guard (public: fileshare, stories, about)
+        └── server.js         # Server clients
 ```
 
 ## Design System
 
-- **Theme**: Dark only — `:root` CSS custom properties
-- **Primary**: `#3ecf8e` (green) — buttons, links, active states
-- **Background**: `#060808` (near-black), cards `#141516`, border `#2a2c2e`
-- **Font**: Inter (sans), JetBrains Mono (mono)
+- **Theme**: Warm Neo-Brutalist
+- **Primary**: `#ff6b4a` (coral) — buttons, links, active states
+- **Background**: `#f8f6f6` (warm cream), cards `#ffffff` (white)
+- **Border**: `#1a1a1a` `border-[2.5px]` (thick black)
+- **Shadow**: Chunky — `4px 4px 0 0 #1a1a1a`
+- **Font**: Geist (sans), JetBrains Mono (mono)
 - **Radius**: `--radius: 0.5rem`
-- **Z-index**: Semantic scale in CSS (`--z-dropdown: 10` through `--z-tooltip: 80`)
-- **Safe area**: `--safe-area-*` tokens
-- **Animation**: `prefers-reduced-motion` respected; text-balance on headings
+- **Z-index**: `--z-dropdown: 10` through `--z-tooltip: 80`
+- **Logo**: Girl face SVG (replaced rabbit)
 
-## Context Architecture
+### Key Utility Classes
 
-7 contexts in `providers.jsx`. Each:
-- Uses `useMemo` for value to prevent cascade re-renders
-- Uses `useCallback` for stable function refs
-- Depends on `AuthProvider` (which creates the supabase client)
+- `.chunky-shadow` / `.chunky-shadow-sm` / `.chunky-shadow-lg` — hard black shadows
+- `.surface-card` — white bg + thick black border + chunky shadow
+- `.memphis-badge` — tilted badge (`-rotate-1.5deg`)
+- `h-dvh` not `h-screen` for viewport height
+- `text-balance` on headings, `text-pretty` on body
 
 ## GSAP Patterns
 
 - `useGSAP(() => {...}, { scope: ref })` — preferred React pattern
 - `gsap.registerPlugin(ScrollTrigger)` at module level
-- NEVER `gsap.registerPlugin(useGSAP)` — useGSAP is a hook, not a plugin
+- **NEVER** `gsap.registerPlugin(useGSAP)` — useGSAP is a hook, not a plugin
 - ScrollTriggers with `once: true` for one-shot reveals
-- `prefers-reduced-motion` checked for all motion-heavy animations
+- `prefers-reduced-motion` respected globally
 
-## Tailwind v4 Conventions
+## Data Context
 
-- `z-(--z-sidebar)` for CSS variable z-index (not `z-[var(--z-sidebar)]`)
-- `shrink-0` not `flex-shrink-0` (canonical)
-- `size-*` for square elements
-- `h-dvh` not `h-screen` (dynamic viewport)
-- `text-balance` on headings, `text-pretty` on body
+- Loads on auth ready + route change (`usePathname()`)
+- `useMemo` wraps context value to prevent cascade re-renders
+- Route change auto-reload: `pathname !== prevPathRef.current → loadAll()`
+- `loadAll()` can be called repeatedly (no loadingRef lock)
 
 ## Key Patterns
 
-### Data Flow
-- Server components fetch from Supabase → pass as props
-- Client components use `useData()` context for shared state
-- Admin pages query Supabase directly (inconsistent with context)
-- Optimistic updates: local state updated before server response
+### OSS Image Optimization
+- Admin photo grid: `getThumbUrl(url, 300)` — resize to 300px
+- Admin video grid: `getThumbUrl(url, 300)` — video snapshot thumbnail
+- Public photo grid: 400px thumbnails + 120px viewer thumbnails
+- Full resolution only used for download and preview dialogs
 
-### RLS Policies
-Defined in `supabase-schema.sql`. All tables have RLS enabled. Public read, admin write for content tables. Private read/write for vault (passwords).
+### Transfer Acceleration
+- Client: `NEXT_PUBLIC_OSS_CDN_DOMAIN = https://yltt2025.oss-accelerate.aliyuncs.com`
+- Server: `endpoint: 'https://oss-accelerate.aliyuncs.com'`
 
-### Upload Architecture
-Two paths:
-1. **Single PUT** (≤10MB): Client → presigned URL → OSS directly
-2. **Multipart** (>10MB): Init → signed part URLs → upload parts → complete
+### Video Streaming
+- `/api/stream?key=xxx` — proxies video through signed OSS URLs (5min expiry)
+- VideoPlayer uses `media-chrome/react` with `autoPlay`
 
-## Performance Notes
-
-### Context Stability
-All providers wrap value in `useMemo`. Adding new values requires updating deps.
-
-### Code Splitting Candidates
-- `emoji-picker-react` (~150KB) — admin stories only
-- `exifr` — admin photo upload only
-- `media-chrome` — video pages only
-- `react-day-picker` (~50KB) — admin stories only
-- `FireworkCanvas` — already uses `dynamic(() => import(...), { ssr: false })`
-
-### Database Query Optimization
-- Home page: 5 parallel queries with `Promise.all` (no data waterfall)
-- Middleware: DB query for admin role on every admin request (consider caching in session)
-- `loadBlessings`: N+1 pattern (blessings → profiles) — could use Supabase join
+### IP Geolocation (metadata route)
+- Cloudflare: reads `cf-connecting-ip` header
+- Correct 172.16-31.x private IP detection (regex)
+- HTTPS-only geolocation services with AbortController timeout
 
 ## Known Issues
 
 ### Security
 - `/api/oshare/*` routes lack auth (public file sharing by design)
-- `/api/auth/callback` — open redirect via unvalidated `next` param
-- `/api/metadata` — HTTP fallback for geolocation
+- `/api/auth/callback` — validate `next` redirect param
 
 ### Tech Debt
-- `admin/photos/page.js` — ~860 lines, needs splitting
-- CRUD in data-context — duplicated across 4 entity types
-- Inconsistent data fetching: context vs direct Supabase queries
+- `admin/photos/page.js` — large file, candidate for splitting
+- CRUD patterns in data-context duplicated across 4 entity types
 - No i18n (Chinese hardcoded throughout)
-- `window.__photosSavedScrollTop` global variable in photos page
-- `generatePageNumbers` duplicated in multiple files (use `@/lib/utils`)
-- `gsap.registerPlugin(useGSAP)` in several files (remove — it's a hook)
-
-### Accessibility Gaps
-- Icon-only buttons missing `aria-label` in some components
-- `PaginationEllipsis` has conflicting `aria-hidden` + `sr-only`
-- Skeletons missing `aria-hidden="true"`
+- `window.__photosSavedScrollTop` removed (photos page rewritten)
 
 ## Environment Variables
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...       # Server only
-OSS_REGION=oss-cn-hangzhou
+SUPABASE_SERVICE_ROLE_KEY=...
+OSS_REGION=oss-cn-chengdu
 OSS_ACCESS_KEY_ID=...
 OSS_ACCESS_KEY_SECRET=...
-OSS_BUCKET=...
-OSS_CDN_DOMAIN=https://...          # Optional
-DEEPSEEK_API_KEY=...                # Fileshare AI search
+OSS_BUCKET=yltt2025
+OSS_ENDPOINT=https://oss-cn-chengdu.aliyuncs.com
+NEXT_PUBLIC_OSS_CDN_DOMAIN=https://yltt2025.oss-accelerate.aliyuncs.com
 ```
 
 ## Skills Installed
 
 See `~/.claude/skills/`:
-- **next-best-practices**, **next-cache-components**, **next-upgrade** — Next.js optimization
-- **gsap-core**, **gsap-scrolltrigger**, **gsap-react**, **gsap-performance**, **gsap-timeline**, **gsap-plugins**, **gsap-frameworks**, **gsap-utils** — GSAP animation
-- **impeccable**, **design-taste-frontend**, **gpt-taste**, **redesign-existing-projects**, **baseline-ui** — Design/UI quality
+- **next-best-practices**, **next-cache-components**, **next-upgrade** — Next.js
+- **gsap-core**, **gsap-scrolltrigger**, **gsap-react**, **gsap-performance**, **gsap-timeline**, **gsap-plugins**, **gsap-frameworks**, **gsap-utils** — GSAP
+- **impeccable**, **design-taste-frontend**, **gpt-taste**, **redesign-existing-projects**, **baseline-ui** — Design

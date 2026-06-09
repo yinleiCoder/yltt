@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
+import VideoPlayer from '@/components/video-player'
 import { useAuth } from '@/contexts/auth-context'
 import { useData } from '@/contexts/data-context'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Send, Loader2, MessageCircle, Trash2, MapPin, Monitor, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { useMetadata } from '@/lib/use-metadata'
-import { getFileUrl } from '@/lib/oss-client'
+import { getFileUrl, getOssKey } from '@/lib/oss-client'
 import { STORY_CATEGORIES } from '@/lib/constants'
 
 export default function StoryDetailPage() {
@@ -81,8 +82,12 @@ export default function StoryDetailPage() {
           <div className="border-t-2 border-black/10 my-5" />
           {story.content ? <div className="text-sm text-foreground/85 font-medium leading-relaxed whitespace-pre-wrap">{story.content}</div> : <p className="text-sm text-muted-foreground italic">暂无内容</p>}
           {hasMedia && (
-            <div className="mt-6 rounded-xl overflow-hidden border-2 border-black">
-              {story.media_type === 'video' ? <video src={mediaUrl} controls className="w-full" playsInline preload="metadata" /> : <img src={mediaUrl} alt={story.title} className="w-full object-cover" loading="lazy" />}
+            <div className="mt-6">
+              {story.media_type === 'video' ? (
+                <VideoPlayer src={`/api/stream?key=${encodeURIComponent(getOssKey(story.media_url))}`} />
+              ) : (
+                <img src={mediaUrl} alt={story.title} className="w-full object-cover rounded-xl border-2 border-black" loading="lazy" />
+              )}
             </div>
           )}
         </CardContent>

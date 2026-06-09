@@ -38,16 +38,11 @@ export default function AuthLayout({ children }) {
         <div className="relative text-center z-10 auth-brand">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-6">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#060808" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <ellipse cx="8" cy="6" rx="2.5" ry="5" />
-              <ellipse cx="16" cy="6" rx="2.5" ry="5" />
-              <path d="M4 13C4 8 7 5 12 5C17 5 20 8 20 13C20 17 17 21 12 21C7 21 4 17 4 13Z" />
-              <circle cx="9" cy="14" r="1" fill="#060808" />
-              <circle cx="15" cy="14" r="1" fill="#060808" />
-              <path d="M11 17.5L12 18.5L13 17.5" strokeWidth="1.5" />
-              <path d="M5 14L2 13.5" />
-              <path d="M5 16L2 16.5" />
-              <path d="M19 14L22 13.5" />
-              <path d="M19 16L22 16.5" />
+              <circle cx="12" cy="8" r="4" />
+              <path d="M12 12c-3 0-5 2-5 4v2h10v-2c0-2-2-4-5-4z" />
+              <path d="M10 8c0-1 .8-1.5 1.5-1.5s1.5.5 1.5 1.5" />
+              <path d="M8 6c-2-1-3-3-1-5" />
+              <path d="M16 6c2-1 3-3 1-5" />
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">YLTT</h1>
@@ -62,11 +57,11 @@ export default function AuthLayout({ children }) {
             <Link href="/" className="inline-flex items-center gap-2">
               <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#060808" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <ellipse cx="8" cy="6" rx="2.5" ry="5" />
-                  <ellipse cx="16" cy="6" rx="2.5" ry="5" />
-                  <path d="M4 13C4 8 7 5 12 5C17 5 20 8 20 13C20 17 17 21 12 21C7 21 4 17 4 13Z" />
-                  <circle cx="9" cy="14" r="1" fill="#060808" />
-                  <circle cx="15" cy="14" r="1" fill="#060808" />
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M12 12c-3 0-5 2-5 4v2h10v-2c0-2-2-4-5-4z" />
+                  <path d="M10 8c0-1 .8-1.5 1.5-1.5s1.5.5 1.5 1.5" />
+                  <path d="M8 6c-2-1-3-3-1-5" />
+                  <path d="M16 6c2-1 3-3 1-5" />
                 </svg>
               </div>
               <span className="font-semibold text-foreground">YLTT</span>

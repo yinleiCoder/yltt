@@ -18,6 +18,10 @@ export function MusicProvider({ children }) {
   const [playMode, setPlayMode] = useState('all') // 'all' | 'one' | 'sequential'
   const audioRef = useRef(null)
   const userInteractedRef = useRef(false)
+  const playingRef = useRef(false)
+
+  // Keep playingRef synced
+  useEffect(() => { playingRef.current = playing }, [playing])
 
   // Load playlist once auth is ready
   useEffect(() => {
@@ -121,13 +125,13 @@ export function MusicProvider({ children }) {
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return
-    if (playing) {
+    if (playingRef.current) {
       audioRef.current.pause()
     } else {
       audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
       userInteractedRef.current = true
     }
-  }, [playing])
+  }, [])
 
   const handlePrev = useCallback(() => {
     if (playlist.length === 0) return

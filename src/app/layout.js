@@ -6,7 +6,7 @@ import { createServerSupabase } from "@/lib/supabase/server"
 export const metadata = {
   title: "YlTt's 2025",
   description: "记录尹磊和唐涛的每一个甜蜜瞬间，分享我们的幸福时光。",
-  icons: { icon: '/rabbit.svg' },
+  icons: { icon: '/favicon.ico' },
 }
 
 export default async function RootLayout({ children }) {

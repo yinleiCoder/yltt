@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
-gsap.registerPlugin(useGSAP)
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Search, Shield, Trash2, User, Mail, MapPin } from 'lucide-react'
+import { Search, Shield, Trash2, User, Mail, MapPin, RefreshCw } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 export default function AdminUsersPage() {
@@ -23,7 +22,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const sectionRef = useRef(null)
 
-  const loadUsers = useCallback(async () => { const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }); setUsers(data || []); setLoading(false) }, [supabase])
+  const loadUsers = useCallback(async () => { setLoading(true); const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }); setUsers(data || []); setLoading(false) }, [supabase])
   useEffect(() => { loadUsers() }, [loadUsers])
 
   useGSAP(() => {
@@ -39,7 +38,10 @@ export default function AdminUsersPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <div><h1 className="text-xl font-bold text-foreground tracking-tight mb-1">用户管理</h1><p className="text-xs text-muted-foreground">共 {users.length} 位用户</p></div>
-        <div className="relative w-56"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input placeholder="搜索用户..." className="pl-8 bg-background border-border text-xs h-8" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-56"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input placeholder="搜索用户..." className="pl-8 bg-background border-border text-xs h-8" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={loadUsers} disabled={loading} title="刷新用户列表"><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /></Button>
+        </div>
       </div>
 
       <Card ref={sectionRef} className="surface-card">

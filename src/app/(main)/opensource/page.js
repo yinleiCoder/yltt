@@ -10,8 +10,6 @@ import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { softwareList } from '@/lib/opensource-data'
 
-gsap.registerPlugin(useGSAP)
-
 function ImageGallery({ images, name }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -129,7 +127,7 @@ export default function OpensourcePage() {
           {softwareList.map((sw) => (
             <Card key={sw.id} className="oss-card surface-card overflow-hidden">
               <CardContent className="p-0">
-                <div className="flex flex-col sm:flex-row">
+                <div className="flex flex-col sm:flex-row px-2">
                   <ImageGallery images={sw.images} name={sw.name} />
 
                   {/* Info */}
