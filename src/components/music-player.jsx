@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMusic } from '@/contexts/music-context'
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, X, ChevronUp, Music, Repeat, Repeat1, ListOrdered } from 'lucide-react'
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, X, Music, Repeat, Repeat1, ListOrdered } from 'lucide-react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
@@ -80,14 +80,12 @@ export function MusicPlayer() {
     setCurrentIdx, setPlayMode, setVolume, setMuted, togglePlay, handlePrev, handleNext, seek,
   } = useMusic()
   const [expanded, setExpanded] = useState(false)
-  const [showFull, setShowFull] = useState(false)
   const [idle, setIdle] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useState(64)
   const [isMobile, setIsMobile] = useState(false)
   const idleTimerRef = useRef(null)
   const pillRef = useRef(null)
   const barRef = useRef(null)
-  const barInnerRef = useRef(null)
   const playlistRef = useRef(null)
   const playBtnRef = useRef(null)
   const prevIdle = useRef(true)
@@ -152,18 +150,6 @@ export function MusicPlayer() {
       tl.fromTo(barRef.current, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, '-=0.15')
     }
   }, [idle])
-
-  // ── GSAP: showFull bar inner height change ───────────
-  useEffect(() => {
-    if (!barRef.current) return
-    const inner = barRef.current.querySelector('.bar-inner')
-    if (!inner) return
-    gsap.to(inner, {
-      height: showFull ? 'auto' : undefined,
-      duration: 0.3,
-      ease: 'power2.inOut',
-    })
-  }, [showFull])
 
   // ── GSAP: playlist popup ─────────────────────────────
   useEffect(() => {
@@ -256,17 +242,7 @@ export function MusicPlayer() {
         </div>
 
         <div className="bg-card/97 backdrop-blur-xl border-t border-border shadow-2xl">
-          {/* Expand toggle */}
-          <div className="flex justify-center -mt-3">
-            <button
-              onClick={() => setShowFull(!showFull)}
-              className="w-8 h-4 bg-card border border-border border-b-0 rounded-t-full flex items-start justify-center hover:bg-accent transition-colors"
-            >
-              <ChevronUp size={12} className={`text-muted-foreground transition-transform duration-300 ${showFull ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
-
-          <div className="bar-inner px-3 pb-2 pt-1 overflow-hidden" style={{ height: showFull ? 'auto' : 40 }}>
+          <div className="px-3 pb-2 pt-2">
             {/* Track info row */}
             <div className="flex items-center gap-3 mb-1.5">
               <span className="text-[10px] font-medium text-foreground truncate flex-1">
@@ -331,7 +307,7 @@ export function MusicPlayer() {
                   progress={progress}
                   color="rgba(255,107,74,0.35)"
                   playedColor="#ff6b4a"
-                  height={showFull ? 40 : 32}
+                  height={40}
                 />
               </div>
 

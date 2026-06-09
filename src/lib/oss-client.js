@@ -1,5 +1,5 @@
 const CDN_DOMAIN = process.env.NEXT_PUBLIC_OSS_CDN_DOMAIN
-  || 'https://yltt.oss-cn-hangzhou.aliyuncs.com'
+  || 'https://yltt2025.oss-cn-chengdu.aliyuncs.com'
 
 export function getFileUrl(objectKey) {
   if (!objectKey) return '/placeholder.svg'
