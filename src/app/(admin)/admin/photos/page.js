@@ -392,17 +392,16 @@ export default function AdminPhotosPage() {
                 key={p.id}
                 className="photo-card surface-card overflow-hidden group cursor-pointer gap-0 py-0 mb-3 break-inside-avoid"
                 style={{
-                  contentVisibility: "auto",
-                  containIntrinsicSize: "auto 300px",
+                  // REMOVED contentVisibility:auto — caused flickering at bottom of scroll
+                  // on mobile/tablet because the estimated intrinsic size (300px) rarely
+                  // matched the actual rendered height, triggering continuous re-layout.
                 }}
               >
                 <div
                   className="relative"
-                  style={
-                    p.width && p.height
-                      ? { aspectRatio: `${p.width}/${p.height}` }
-                      : {}
-                  }
+                  style={{
+                    aspectRatio: p.width && p.height ? `${p.width}/${p.height}` : "4/3",
+                  }}
                   onDoubleClick={() => setPreviewPhoto(p)}
                 >
                   {p.url ? (
@@ -410,7 +409,6 @@ export default function AdminPhotosPage() {
                       src={getThumbUrl(p.url, 300)}
                       alt={p.title || ""}
                       className="w-full h-full object-cover"
-                      style={p.width && p.height ? {} : { aspectRatio: "1/1" }}
                       loading="lazy"
                       decoding="async"
                     />
