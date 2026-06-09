@@ -6,7 +6,7 @@ import { useGSAP } from '@gsap/react'
 import { useData } from '@/contexts/data-context'
 import { getFileUrl } from '@/lib/oss-client'
 import { format } from 'date-fns'
-import { Camera, Calendar, Download, ChevronLeft, ChevronRight, Image } from 'lucide-react'
+import { Camera, Calendar, Download, ChevronLeft, ChevronRight, X, Image } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useDownloads } from '@/contexts/download-context'
@@ -70,6 +70,26 @@ export default function PhotosPage() {
 
   const goNext = useCallback(() => { if (sortedPhotos.length && currentIdx < sortedPhotos.length - 1) setSelectedId(sortedPhotos[currentIdx + 1].id) }, [sortedPhotos, currentIdx])
   const goPrev = useCallback(() => { if (sortedPhotos.length && currentIdx > 0) setSelectedId(sortedPhotos[currentIdx - 1].id) }, [sortedPhotos, currentIdx])
+
+  /* ── Lock body scroll when viewer is open ─── */
+  useEffect(() => {
+    if (!viewerOpen) return
+    const scrollY = window.scrollY
+    const el = document.documentElement
+    const origOverflow = el.style.overflow
+    el.style.overflow = 'hidden'
+    // Keep page from jumping — preserve scroll position visually
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    return () => {
+      el.style.overflow = origOverflow
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [viewerOpen])
 
   /* ── Keyboard nav ─── */
   useEffect(() => {
@@ -144,32 +164,56 @@ export default function PhotosPage() {
       {/* ── Photo viewer overlay ─── */}
       {viewerOpen && currentPhoto && (
         <div className="fixed inset-0 z-[--z-modal] bg-background/95 backdrop-blur-sm flex cursor-pointer" onClick={() => setViewerOpen(false)}>
-          <div className="flex-1 flex flex-col lg:flex-row" onClick={(e) => e.stopPropagation()}>
+          <div className="flex-1 flex lg:flex-row" onClick={(e) => e.stopPropagation()}>
+            {/* ── Image area ── */}
             <div className="flex-1 flex items-center justify-center relative min-h-0 p-4">
+              {/* Nav buttons */}
               {sortedPhotos.length > 1 && (<>
-                <button className="absolute left-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border-2 border-black chunky-shadow-sm flex items-center justify-center hover:bg-stone-50 transition-colors z-10" onClick={goPrev} aria-label="上一张"><ChevronLeft size={20} className="text-black" /></button>
-                <button className="absolute right-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border-2 border-black chunky-shadow-sm flex items-center justify-center hover:bg-stone-50 transition-colors z-10" onClick={goNext} aria-label="下一张"><ChevronRight size={20} className="text-black" /></button>
+                <button className="absolute left-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border-2 border-black chunky-shadow-sm flex items-center justify-center hover:bg-stone-50 transition-colors z-10 max-lg:size-8 max-lg:left-2" onClick={(e) => { e.stopPropagation(); goPrev() }} aria-label="上一张"><ChevronLeft size={20} className="text-black max-lg:size-4" /></button>
+                <button className="absolute right-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border-2 border-black chunky-shadow-sm flex items-center justify-center hover:bg-stone-50 transition-colors z-10 max-lg:size-8 max-lg:right-2" onClick={(e) => { e.stopPropagation(); goNext() }} aria-label="下一张"><ChevronRight size={20} className="text-black max-lg:size-4" /></button>
               </>)}
-              <img src={getThumbUrl(currentPhoto.url, 1600)} alt={currentPhoto.title || ''} className="max-h-full max-w-full object-contain select-none rounded-xl" draggable={false} />
-            </div>
-            <div className="lg:w-72 shrink-0 bg-white border-l-[2.5px] border-black p-6 overflow-y-auto" data-lenis-prevent>
-              <button className="ml-auto block text-xs font-bold text-muted-foreground hover:text-foreground mb-4" onClick={() => setViewerOpen(false)}>关闭 ✕</button>
-              {currentPhoto.title && <h2 className="font-black text-lg mb-4">{currentPhoto.title}</h2>}
-              <div className="space-y-3 text-sm">
-                {currentPhoto.taken_at && <p className="flex items-center gap-2 text-muted-foreground font-medium"><Calendar size={14} className="shrink-0 text-muted-foreground/40" aria-hidden="true" /><span>{format(new Date(currentPhoto.taken_at), 'yyyy-MM-dd HH:mm')}</span></p>}
-                {currentPhoto.camera && <p className="flex items-start gap-2 text-muted-foreground font-medium"><Camera size={14} className="shrink-0 text-muted-foreground/40 mt-0.5" aria-hidden="true" /><span>{currentPhoto.camera}{currentPhoto.lens ? ` + ${currentPhoto.lens}` : ''}</span></p>}
-                {currentPhoto.width && currentPhoto.height && <p className="text-xs text-muted-foreground/40 font-bold tabular-nums">{currentPhoto.width} × {currentPhoto.height}</p>}
+              <img src={getThumbUrl(currentPhoto.url, 1600)} alt={currentPhoto.title || ''} className="max-h-full max-w-full object-contain select-none max-lg:rounded-none" draggable={false} />
+
+              {/* ── Mobile: close + page indicator ── */}
+              <button className="lg:hidden absolute top-4 right-4 size-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center z-10" onClick={() => setViewerOpen(false)} aria-label="关闭"><X size={16} className="text-white" /></button>
+              {sortedPhotos.length > 1 && (
+                <p className="lg:hidden absolute top-4 left-4 text-xs font-bold text-white/80 bg-black/30 backdrop-blur-sm rounded-full px-3 py-1.5 z-10 tabular-nums">{currentIdx + 1} / {sortedPhotos.length}</p>
+              )}
+
+              {/* ── Mobile: photo info overlay at bottom ── */}
+              <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 via-black/30 to-transparent p-4 pt-10 z-10 pointer-events-none">
+                {currentPhoto.title && <p className="text-white font-bold text-sm truncate">{currentPhoto.title}</p>}
+                <div className="flex items-center gap-3 mt-1 text-white/70 text-xs">
+                  {currentPhoto.taken_at && <span>{format(new Date(currentPhoto.taken_at), 'yyyy-MM-dd')}</span>}
+                  {currentPhoto.camera && <span className="truncate">{currentPhoto.camera}{currentPhoto.lens ? ` + ${currentPhoto.lens}` : ''}</span>}
+                </div>
               </div>
-              {exifParts(currentPhoto).length > 0 && <div className="flex flex-wrap gap-1.5 mt-4">{exifParts(currentPhoto).map((part, i) => <span key={i} className="px-2 py-0.5 rounded-lg bg-stone-100 border border-black/10 text-[10px] font-bold text-foreground/60">{part}</span>)}</div>}
-              <Button variant="outline" className="mt-6 w-full border-2 border-black font-bold text-sm" onClick={() => { const url = getFileUrl(currentPhoto.url); const ext = url.split('.').pop()?.split('?')[0] || 'jpg'; const name = currentPhoto.title || 'photo'; const filename = name.toLowerCase().endsWith('.' + ext.toLowerCase()) ? name : `${name}.${ext}`; addDownload(url, filename) }}><Download size={14} className="mr-2" aria-hidden="true" />下载原图</Button>
-              {sortedPhotos.length > 1 && <p className="text-center text-xs text-muted-foreground/40 font-bold tabular-nums mt-4">{currentIdx + 1} / {sortedPhotos.length}</p>}
-              {/* Viewer thumbnail strip — use small thumbs */}
-              <div className="mt-6 grid grid-cols-4 gap-2">
-                {sortedPhotos.map((p) => (
-                  <button key={p.id} onClick={() => setSelectedId(p.id)} className={`aspect-4/3 rounded-lg overflow-hidden border-2 transition-all duration-150 ${p.id === selectedId ? 'border-primary scale-105 shadow-[2px_2px_0_0_#ff6b4a]' : 'border-black/20 opacity-60 hover:opacity-100 hover:border-black/50'}`} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
-                    {p.url ? <img src={getThumbUrl(p.url, 120)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full bg-stone-100 flex items-center justify-center"><Camera size={10} className="text-muted-foreground/30" /></div>}
-                  </button>
-                ))}
+            </div>
+
+            {/* ── Desktop sidebar ── */}
+            <div className="max-lg:hidden lg:w-72 shrink-0 bg-white border-l-[2.5px] border-black flex flex-col min-h-0">
+              {/* Photo info — fixed, no scroll */}
+              <div className="shrink-0 p-6 pb-3">
+                <button className="ml-auto block text-xs font-bold text-muted-foreground hover:text-foreground mb-4" onClick={() => setViewerOpen(false)}>关闭 ✕</button>
+                {currentPhoto.title && <h2 className="font-black text-lg mb-4">{currentPhoto.title}</h2>}
+                <div className="space-y-3 text-sm">
+                  {currentPhoto.taken_at && <p className="flex items-center gap-2 text-muted-foreground font-medium"><Calendar size={14} className="shrink-0 text-muted-foreground/40" aria-hidden="true" /><span>{format(new Date(currentPhoto.taken_at), 'yyyy-MM-dd HH:mm')}</span></p>}
+                  {currentPhoto.camera && <p className="flex items-start gap-2 text-muted-foreground font-medium"><Camera size={14} className="shrink-0 text-muted-foreground/40 mt-0.5" aria-hidden="true" /><span>{currentPhoto.camera}{currentPhoto.lens ? ` + ${currentPhoto.lens}` : ''}</span></p>}
+                  {currentPhoto.width && currentPhoto.height && <p className="text-xs text-muted-foreground/40 font-bold tabular-nums">{currentPhoto.width} × {currentPhoto.height}</p>}
+                </div>
+                {exifParts(currentPhoto).length > 0 && <div className="flex flex-wrap gap-1.5 mt-4">{exifParts(currentPhoto).map((part, i) => <span key={i} className="px-2 py-0.5 rounded-lg bg-stone-100 border border-black/10 text-[10px] font-bold text-foreground/60">{part}</span>)}</div>}
+                <Button variant="outline" className="mt-6 w-full border-2 border-black font-bold text-sm" onClick={() => { const url = getFileUrl(currentPhoto.url); const ext = url.split('.').pop()?.split('?')[0] || 'jpg'; const name = currentPhoto.title || 'photo'; const filename = name.toLowerCase().endsWith('.' + ext.toLowerCase()) ? name : `${name}.${ext}`; addDownload(url, filename) }}><Download size={14} className="mr-2" aria-hidden="true" />下载原图</Button>
+                {sortedPhotos.length > 1 && <p className="text-center text-xs text-muted-foreground/40 font-bold tabular-nums mt-4">{currentIdx + 1} / {sortedPhotos.length}</p>}
+              </div>
+              {/* Thumbnail strip — scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+                <div className="grid grid-cols-4 gap-2">
+                  {sortedPhotos.map((p) => (
+                    <button key={p.id} onClick={() => setSelectedId(p.id)} className={`aspect-4/3 rounded-lg overflow-hidden border-2 transition-all duration-150 ${p.id === selectedId ? 'border-primary scale-105 shadow-[2px_2px_0_0_#ff6b4a]' : 'border-black/20 opacity-60 hover:opacity-100 hover:border-black/50'}`} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
+                      {p.url ? <img src={getThumbUrl(p.url, 120)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full bg-stone-100 flex items-center justify-center"><Camera size={10} className="text-muted-foreground/30" /></div>}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

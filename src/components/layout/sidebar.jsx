@@ -129,7 +129,6 @@ export function Sidebar({ mobileOpen, onMobileClose }) {
     return (<>
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/30 lg:hidden cursor-pointer" onClick={closeMobile} />}
       <aside ref={overlayRef} className="fixed top-0 left-0 z-50 h-dvh w-64 flex flex-col bg-white text-sidebar-foreground border-r-[2.5px] border-black lg:hidden shadow-xl" style={{ transform: 'translateX(-100%)' }}>
-        <button className="absolute -right-10 top-3 size-8 rounded-full bg-white border-2 border-black flex items-center justify-center lg:hidden" onClick={closeMobile} aria-label="关闭菜单"><X size={16} className="text-black" /></button>
         {content}
       </aside>
     </>)
