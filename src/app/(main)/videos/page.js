@@ -7,7 +7,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Play, Video as VideoIcon, Film, X, Calendar } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { generatePageNumbers } from '@/lib/utils'
-import { getFileUrl, getOssKey } from '@/lib/oss-client'
+import { getFileUrl } from '@/lib/oss-client'
 import { useMusic } from '@/contexts/music-context'
 import { format } from 'date-fns'
 import gsap from 'gsap'
@@ -24,11 +24,9 @@ function getThumbUrl(url) {
   return `${full}${sep}x-oss-process=video/snapshot,t_2000,f_jpg,w_600`
 }
 
-/* ── Generate stream URL from OSS key ─── */
-function getStreamUrl(url) {
-  const key = getOssKey(url)
-  if (!key) return getFileUrl(url)
-  return `/api/stream?key=${encodeURIComponent(key)}`
+/* ── Direct OSS URL (public-read bucket, no proxy needed) ─── */
+function getPlayUrl(url) {
+  return getFileUrl(url)
 }
 
 /* ── Loading skeleton ─── */
@@ -186,7 +184,7 @@ export default function VideosPage() {
           <div className="flex-1 flex items-center justify-center px-1 sm:px-4 min-h-0" onClick={(e) => e.stopPropagation()}>
             <div className="w-full max-w-5xl h-full max-h-full">
               <VideoPlayer
-                src={getStreamUrl(currentVideo.url)}
+                src={getPlayUrl(currentVideo.url)}
                 poster={getThumbUrl(currentVideo.url)}
                 onEnded={videos.length > 1 ? goNext : undefined}
                 onPrevious={videos.length > 1 ? goPrev : undefined}
